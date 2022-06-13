@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>靠打断点找Vue构造函数</title>
+</head>
+<body>
+  <div id="app">
+    {{hello1}}
+    <comp></comp>
+    <button @click="handleClick">123</button>
+  </div>
+
+  <script src="../../dist/vue.js"></script>
+  <script>
+    // 全局注册组件，这一步是为了验证initMixin中的将全局配置合并到根组件的局部配置
+    Vue.component('comp', {
+      template: '<div>I am comp</div>'
+    })
+    // debugger
+    const vm = new Vue({
+      el: '#app',
+      data: {
+        hello: 'hello Vue'
+      },
+      methods: {
+        handleClick() {
+          this.hello = this.hello + '2'
+        }
+      },
+      computed: {
+        hello1: function(){
+          return this.hello + '1'
+        } 
+      }
+      // component: {
+      //   localComp, // 这是根组件自己的局部配置的组件
+      //   globalComp // 这是合并过来的全局配置的组件
+      // }
+    })
+  </script>
+</body>
+</html>
