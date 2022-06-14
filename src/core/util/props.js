@@ -18,6 +18,15 @@ type PropOptions = {
   validator: ?Function
 };
 
+// 检验父组件传入的 props 值匹配子组件中定义的 props
+/**
+ * 
+ * @param {*} key 遍历 propOptions 拿到的每个属性名
+ * @param {*} propOptions 当前实例规范化后的 props 选项 
+ * @param {*} propsData  父组件传入的真实 props 数据
+ * @param {*} vm 当前实例
+ * @returns 
+ */
 export function validateProp (
   key: string,
   propOptions: Object,
@@ -28,19 +37,27 @@ export function validateProp (
   const absent = !hasOwn(propsData, key)
   let value = propsData[key]
   // boolean casting
+  // getTypeIndex 用来判断 prop 的 type 中是否存在某种属性
   const booleanIndex = getTypeIndex(Boolean, prop.type)
+  // 判断 prop 的 type 是否是 boolean
   if (booleanIndex > -1) {
+    // 当父组件未传入且配置中未填写默认值时
     if (absent && !hasOwn(prop, 'default')) {
       value = false
     } else if (value === '' || value === hyphenate(key)) {
+      // 当传入值为空字符串或属性值和属性名相等走这里
       // only cast empty string / same name to boolean if
       // boolean has higher priority
       const stringIndex = getTypeIndex(String, prop.type)
+      // 满足以下任一条件：
+      //    1. prop 选项中未定义 type:String
+      //    2. 定义了多 type，但 boolean 在 string 之前，例如：type: [Boolean, String]
       if (stringIndex < 0 || booleanIndex < stringIndex) {
         value = true
       }
     }
   }
+  // 如果不是 boolean 类型并且父组件中未传入值
   // check default value
   if (value === undefined) {
     value = getPropDefaultValue(vm, prop, key)
@@ -51,6 +68,9 @@ export function validateProp (
     observe(value)
     toggleObserving(prevShouldObserve)
   }
+
+  // 若父组件传入了值
+  // 那么通过 assertProp 判断该属性值是否与要求的类型相匹配
   if (
     process.env.NODE_ENV !== 'production' &&
     // skip validation for weex recycle-list child component props
@@ -58,6 +78,8 @@ export function validateProp (
   ) {
     assertProp(prop, key, value, vm, absent)
   }
+
+  // 将值返回
   return value
 }
 

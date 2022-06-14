@@ -101,9 +101,15 @@ export default class Watcher {
    */
   get () {
     pushTarget(this)
+    // console.log(Dep.target);
     let value
     const vm = this.vm
     try {
+      // 最重要的一步（精华）
+      /* computed 中干了什么
+          1. 将 getter 函数中的监听项返回
+          顺便执行其 get 方法，触发了依赖收集(watcher 收集了 dep，dep 收集了 watcher)
+       */
       value = this.getter.call(vm, vm)
     } catch (e) {
       if (this.user) {
@@ -118,8 +124,10 @@ export default class Watcher {
         traverse(value)
       }
       popTarget()
+      // 对新老 deps 进行修改
       this.cleanupDeps()
     }
+    // 将拿到的 value 返回出去
     return value
   }
 
@@ -146,6 +154,7 @@ export default class Watcher {
     let i = this.deps.length
     while (i--) {
       const dep = this.deps[i]
+      // 如果新的 deps 中没有找到老 dep，移除老 dep
       if (!this.newDepIds.has(dep.id)) {
         dep.removeSub(this)
       }
@@ -155,6 +164,7 @@ export default class Watcher {
     this.newDepIds = tmp
     this.newDepIds.clear()
     tmp = this.deps
+    // 最后新 dep 会被赋给老 dep，新dep置空
     this.deps = this.newDeps
     this.newDeps = tmp
     this.newDeps.length = 0
@@ -229,6 +239,7 @@ export default class Watcher {
     while (i--) {
       this.deps[i].depend()
     }
+    console.log(this.deps);
   }
 
   /**

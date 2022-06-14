@@ -166,6 +166,7 @@ export function queueWatcher (watcher: Watcher) {
   if (has[id] == null) {
     has[id] = true
     if (!flushing) {
+      // 定义 computed 后最终会引导 render watcher 走到这里
       queue.push(watcher)
     } else {
       // if already flushing, splice the watcher based on its id
