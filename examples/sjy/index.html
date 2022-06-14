@@ -34,6 +34,11 @@
         hello1: function(){
           return this.hello + '1'
         } 
+      },
+      watch: {
+        hello(newValue) {
+          console.log(newValue);
+        }
       }
       // component: {
       //   localComp, // 这是根组件自己的局部配置的组件
