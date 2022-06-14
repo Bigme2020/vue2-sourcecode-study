@@ -37,7 +37,7 @@ export function initMixin (Vue: Class<Component>) {
       // since dynamic options merging is pretty slow, and none of the
       // internal component options needs special treatment.
       // 若是子组件，走这：
-      //    目的：性能优化，减少运行时的动态查找，提高执行效率
+      //    目的：性能优化，打平配置到 vm.$options，减少运行时的动态查找，提高执行效率
       initInternalComponent(vm, options)
     } else {
       // 若是根组件，走这：选项合并，把全局配置选项合并到根组件的局部配置上
@@ -63,10 +63,15 @@ export function initMixin (Vue: Class<Component>) {
     }
     // expose real self
     vm._self = vm
+
+
     // 重要，整个初始化最重要的部分，也是核心
-    // 初始化组件关系属性，比如：$parent $root $children $refs
+    // 组件关系属性的初始化，比如：$parent $root $children $refs
     initLifecycle(vm)
-    // 将 this.$emit('click') 变成 this.$on('click', function handleClick() {})
+    // 初始化自定义事件
+    // <comp @click="handleClick"></comp>
+    // 组件上事件的监听其实是子组件自己在监听，也就是说谁触发谁监听
+    // this.$emit('click') 编译成 this.$on('click', function handleClick() {})
     initEvents(vm)
     // 初始化插槽，获取 this.$slots，定义this._c,即 createElement 方法，平时的使用的 h 函数
     initRender(vm)
@@ -75,8 +80,12 @@ export function initMixin (Vue: Class<Component>) {
     // 初始化 inject 选项
     initInjections(vm) // resolve injections before data/props
 
+    // 响应式原理的核心，处理 props methods data computed watch 等选项
     initState(vm)
+    // 处理 provide 选项，挂载到 vm._provided 上面
+    // 其实 provide/inject 依赖注入主要就是靠子组件 inject 去找祖代组件定义的 provide
     initProvide(vm) // resolve provide after data/props
+    // 执行 created 生命周期钩子函数
     callHook(vm, 'created')
 
     // 性能度量结束
@@ -87,13 +96,15 @@ export function initMixin (Vue: Class<Component>) {
       measure(`vue ${vm._name} init`, startTag, endTag)
     }
 
+    // 如果存在 el 选项，会自动执行 $mount
+    // 相反如果不存在 el，就会像项目中 main.js 中那样去手动 mount
     if (vm.$options.el) {
       vm.$mount(vm.$options.el)
     }
   }
 }
 
-// 性能优化，打平配置对象上的属性，减少运行时的动态查找，提高执行效率
+// 性能优化，打平配置对象上的属性到 vm.$options，减少运行时的动态查找，提高执行效率
 export function initInternalComponent (vm: Component, options: InternalComponentOptions) {
   // vm.constructor 上的 options 是 initGlobalAPI这个函数中定义上去的
   // 基于构造函数上的配置对象创建 vm.$options
