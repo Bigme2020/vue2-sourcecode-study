@@ -253,6 +253,9 @@ function createComputedGetter (key) {
         // 在下次页面更新后，watcher.update 会将 watcher.dirty 置为 true  
         watcher.evaluate()
       }
+      // 此时的 Dep.target 不是 computed watcher
+      // 而是 targetStack 中上一个 render watcher
+      // 于是 dep 就把 render watcher 也收集进去了
       if (Dep.target) {
         watcher.depend()
       }

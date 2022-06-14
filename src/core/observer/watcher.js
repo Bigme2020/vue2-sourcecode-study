@@ -101,6 +101,7 @@ export default class Watcher {
    */
   get () {
     pushTarget(this)
+    // console.log(Dep.target);
     let value
     const vm = this.vm
     try {
@@ -118,6 +119,7 @@ export default class Watcher {
         traverse(value)
       }
       popTarget()
+      // 对新老 deps 进行修改
       this.cleanupDeps()
     }
     return value
@@ -146,6 +148,7 @@ export default class Watcher {
     let i = this.deps.length
     while (i--) {
       const dep = this.deps[i]
+      // 如果新的 deps 中没有找到老 dep，移除老 dep
       if (!this.newDepIds.has(dep.id)) {
         dep.removeSub(this)
       }
@@ -155,6 +158,7 @@ export default class Watcher {
     this.newDepIds = tmp
     this.newDepIds.clear()
     tmp = this.deps
+    // 最后新 dep 会被赋给老 dep，新dep置空
     this.deps = this.newDeps
     this.newDeps = tmp
     this.newDeps.length = 0
@@ -229,6 +233,7 @@ export default class Watcher {
     while (i--) {
       this.deps[i].depend()
     }
+    console.log(this.deps);
   }
 
   /**
