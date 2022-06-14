@@ -105,6 +105,11 @@ export default class Watcher {
     let value
     const vm = this.vm
     try {
+      // 最重要的一步（精华）
+      /* computed 中干了什么
+          1. 将 getter 函数中的监听项返回
+          顺便执行其 get 方法，触发了依赖收集(watcher 收集了 dep，dep 收集了 watcher)
+       */
       value = this.getter.call(vm, vm)
     } catch (e) {
       if (this.user) {
@@ -122,6 +127,7 @@ export default class Watcher {
       // 对新老 deps 进行修改
       this.cleanupDeps()
     }
+    // 将拿到的 value 返回出去
     return value
   }
 
