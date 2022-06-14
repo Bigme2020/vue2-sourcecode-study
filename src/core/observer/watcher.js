@@ -80,6 +80,7 @@ export default class Watcher {
     if (typeof expOrFn === 'function') {
       this.getter = expOrFn
     } else {
+      // watch 中会走这里通过 parsePath 返回一个函数给到 getter
       this.getter = parsePath(expOrFn)
       if (!this.getter) {
         this.getter = noop
@@ -109,6 +110,10 @@ export default class Watcher {
       /* computed 中干了什么
           1. 将 getter 函数中的监听项返回
           顺便执行其 get 方法，触发了依赖收集(watcher 收集了 dep，dep 收集了 watcher)
+       */
+      /* watch 中干了什么
+          1. 用户定义的 watch 传进来的 expOrFn 是 key，那么首先 parsePath 会将其转变成函数给到 this.getter
+          2. 传入 vm，这样就返回了 vm[key]，返回了监听的值
        */
       value = this.getter.call(vm, vm)
     } catch (e) {
@@ -183,6 +188,7 @@ export default class Watcher {
     } else if (this.sync) {
       this.run()
     } else {
+      // 这边会走到 scheduler 去
       queueWatcher(this)
     }
   }
@@ -206,6 +212,7 @@ export default class Watcher {
         const oldValue = this.value
         this.value = value
         if (this.user) {
+          // 用户定义的 watcher 最终会在监听到值更新时走到这里调用 callback
           const info = `callback for watcher "${this.expression}"`
           invokeWithErrorHandling(this.cb, this.vm, [value, oldValue], this.vm, info)
         } else {
@@ -239,7 +246,7 @@ export default class Watcher {
     while (i--) {
       this.deps[i].depend()
     }
-    console.log(this.deps);
+    console.log('watcher.depend', this.deps);
   }
 
   /**
