@@ -41,17 +41,22 @@ export class Observer {
 
   constructor (value: any) {
     this.value = value
+    // Observer 实例的 dep 是给对象或数组用的
+    // defineReactive中的 dep 是给对象中每个 key 用的
     this.dep = new Dep()
     this.vmCount = 0
     def(value, '__ob__', this)
     if (Array.isArray(value)) {
+      // 处理数组响应式
       if (hasProto) {
         protoAugment(value, arrayMethods)
       } else {
         copyAugment(value, arrayMethods, arrayKeys)
       }
+      // 对数组中每项进行响应式处理
       this.observeArray(value)
     } else {
+      // 处理对象响应式
       this.walk(value)
     }
   }
@@ -106,6 +111,7 @@ function copyAugment (target: Object, src: Object, keys: Array<string>) {
  * Attempt to create an observer instance for a value,
  * returns the new observer if successfully observed,
  * or the existing observer if the value already has one.
+ * 响应式处理的入口
  */
 export function observe (value: any, asRootData: ?boolean): Observer | void {
   if (!isObject(value) || value instanceof VNode) {
@@ -113,6 +119,7 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
   }
   let ob: Observer | void
   if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) {
+    // 有 __ob__ 表示此数据已经经过响应式处理了,直接返回,避免重复操作
     ob = value.__ob__
   } else if (
     shouldObserve &&
@@ -121,6 +128,7 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
     Object.isExtensible(value) &&
     !value._isVue
   ) {
+    // 进行响应式处理
     ob = new Observer(value)
   }
   if (asRootData && ob) {
@@ -139,8 +147,10 @@ export function defineReactive (
   customSetter?: ?Function,
   shallow?: boolean
 ) {
+  // 实例化一个 dep,一个 key 对应一个 dep
   const dep = new Dep()
 
+  // 获取属性描述符,若 configurable 为 false 则不进行响应式处理
   const property = Object.getOwnPropertyDescriptor(obj, key)
   if (property && property.configurable === false) {
     return
@@ -153,15 +163,19 @@ export function defineReactive (
     val = obj[key]
   }
 
+  // 通过递归的方式处理 val 为对象的情况,如果 childOb 有值说明当前 key 对应的是一个对象
   let childOb = !shallow && observe(val)
+  // 拦截 obj.key,进行依赖收集以及返回最新的值
   Object.defineProperty(obj, key, {
     enumerable: true,
     configurable: true,
     get: function reactiveGetter () {
       const value = getter ? getter.call(obj) : val
       if (Dep.target) {
+        // 读取时进行双向依赖收集,将 dep 添加到 watcher,将 watcher 添加到 dep 中
         dep.depend()
         if (childOb) {
+          // 对这个对象进行双向依赖收集
           childOb.dep.depend()
           if (Array.isArray(value)) {
             dependArray(value)
@@ -170,9 +184,12 @@ export function defineReactive (
       }
       return value
     },
+    // 拦截 obj.key = newVal 的操作
     set: function reactiveSetter (newVal) {
+      // 首先获取老值
       const value = getter ? getter.call(obj) : val
       /* eslint-disable no-self-compare */
+      // 如果老值和新值一样，不做处理
       if (newVal === value || (newVal !== newVal && value !== value)) {
         return
       }
@@ -181,13 +198,17 @@ export function defineReactive (
         customSetter()
       }
       // #7981: for accessor properties without setter
+      // 有 getter 没有 setter 说明只是只读属性，不做处理
       if (getter && !setter) return
+      // 新值替换老值
       if (setter) {
         setter.call(obj, newVal)
       } else {
         val = newVal
       }
+      // 新值如果是对象，也要重新做响应式处理
       childOb = !shallow && observe(newVal)
+      // 
       dep.notify()
     }
   })
@@ -265,9 +286,11 @@ export function del (target: Array<any> | Object, key: any) {
  * Collect dependencies on array elements when the array is touched, since
  * we cannot intercept array element access like property getters.
  */
+// 处理数组的响应式
 function dependArray (value: Array<any>) {
   for (let e, i = 0, l = value.length; i < l; i++) {
     e = value[i]
+    // 对数组中为对象的进行依赖收集
     e && e.__ob__ && e.__ob__.dep.depend()
     if (Array.isArray(e)) {
       dependArray(e)
