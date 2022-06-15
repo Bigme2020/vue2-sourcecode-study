@@ -63,6 +63,7 @@ export function initState (vm: Component) {
     // 对 data 做响应式处理
     initData(vm)
   } else {
+    // 响应式重点
     observe(vm._data = {}, true /* asRootData */)
   }
   // 初始化 computed
@@ -70,7 +71,12 @@ export function initState (vm: Component) {
   // 代理，支持 this.xxx 访问
   if (opts.computed) initComputed(vm, opts.computed)
   if (opts.watch && opts.watch !== nativeWatch) {
-    // 
+    // 初始化 watcher
+    // 对每一个 key 实例化一个 watcher 去监听 key 的变化并调用回调
+    // computed 和 watch 有什么区别？
+    //    1. computed 是默认懒执行且不可更改（懒执行即读到 computed 时才会执行）
+    //      而 watcher 可以通过 immediate 进行配置
+    //    2. 使用场景不同,computed 无法执行异步操作,watcher 可以
     initWatch(vm, opts.watch)
   }
 }
