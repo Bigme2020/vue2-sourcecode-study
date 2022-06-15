@@ -100,6 +100,7 @@ export default class Watcher {
   /**
    * Evaluate the getter, and re-collect dependencies.
    */
+  // get 会在 run 中和 evaluate 调用
   get () {
     pushTarget(this)
     // console.log(Dep.target);
