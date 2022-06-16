@@ -10,6 +10,14 @@ export let isUsingMicroTask = false
 const callbacks = []
 let pending = false
 
+/* 
+  1. 将 pending = false，表示下一个 flushCallbacks 函数可以进入异步队列了
+  2. 浅拷贝 callbacks 数组
+  3. 执行浅拷贝数组中的所有函数
+      flushSchedulerQueue
+      用户自己调用 this.$nextTick 传递的回调函数
+  4. 清空 callbacks 数组
+ */
 function flushCallbacks () {
   pending = false
   const copies = callbacks.slice(0)
@@ -39,6 +47,9 @@ let timerFunc
 // completely stops working after triggering a few times... so, if native
 // Promise is available, we will use it:
 /* istanbul ignore next, $flow-disable-line */
+// 将 flushCallbacks 放入异步微任务队列
+// 顺序：Promise > MutationObserver > setImmediate > setTimeout
+// 性能上也是这个顺序
 if (typeof Promise !== 'undefined' && isNative(Promise)) {
   const p = Promise.resolve()
   timerFunc = () => {
@@ -48,6 +59,8 @@ if (typeof Promise !== 'undefined' && isNative(Promise)) {
     // microtask queue but the queue isn't being flushed, until the browser
     // needs to do some other work, e.g. handle a timer. Therefore we can
     // "force" the microtask queue to be flushed by adding an empty timer.
+    // 在一些场景中，Promise.then不会完全失效，但也会出现奇怪的情况，比如回调被推入到了
+    // 微任务队列中后，浏览器不会去执行微任务队列直到处理了计时器，所以我们可以通过添加空计时器“强制”清空微任务队列
     if (isIOS) setTimeout(noop)
   }
   isUsingMicroTask = true
@@ -84,8 +97,12 @@ if (typeof Promise !== 'undefined' && isNative(Promise)) {
   }
 }
 
+// 接受两个参数，回调函数和上下文
 export function nextTick (cb?: Function, ctx?: Object) {
   let _resolve
+  // 这里为什么要包一层 try catch 不是为内部方法准备的
+  // 而是为用户传入的方法准备的，用户传入的回调函数可能报错
+  // 然后将 包装好的函数 放到 callbacks 数组中
   callbacks.push(() => {
     if (cb) {
       try {
@@ -98,7 +115,11 @@ export function nextTick (cb?: Function, ctx?: Object) {
     }
   })
   if (!pending) {
+    // pending = false时，执行 timerFunc 方法
+    // 这里的 pending = true 保证了浏览器的异步队列中只会有一个 flushCallbacks 函数
     pending = true
+    // 将 flushCallbacks 放入到异步队列中
+    // 即异步执行每个 callback 回调函数，此回调即更新
     timerFunc()
   }
   // $flow-disable-line

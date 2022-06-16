@@ -163,15 +163,21 @@ function callActivatedHooks (queue) {
  */
 export function queueWatcher (watcher: Watcher) {
   const id = watcher.id
+  // 判重，watcher 不会重复入队
+  // 在一个组件的渲染周期内，若一个响应式数据被多次更新，watcher 不会重复入队
   if (has[id] == null) {
+    // 置为 true 表示该 watcher 已入队
     has[id] = true
     if (!flushing) {
+      // 如果 flushing = false，表示当前 watcher 队列没有在被刷新，watcher 直接入队
       // 定义 computed 后最终会引导 render watcher 走到这里
       queue.push(watcher)
     } else {
+      // 在刷新中
       // if already flushing, splice the watcher based on its id
       // if already past its id, it will be run next immediately.
       let i = queue.length - 1
+      // 根据 watcher id 由小到大进行有序排列，保证 watcher 入队后，刷新中的 watcher 队列仍然时有序的
       while (i > index && queue[i].id > watcher.id) {
         i--
       }
@@ -179,12 +185,17 @@ export function queueWatcher (watcher: Watcher) {
     }
     // queue the flush
     if (!waiting) {
+      // waiting = false 走这里，表示当前浏览器的异步任务队列中没有 flushSchedulerQueue 函数
       waiting = true
 
       if (process.env.NODE_ENV !== 'production' && !config.async) {
+        // 同步执行，直接去刷新 watcher 队列
+        // 性能就会大打折扣
+        // 这里也是兼容 SSR，SSR 需要同步执行
         flushSchedulerQueue()
         return
       }
+      // 这就是那个 nextTick，this.$nextTick 或 Vue.nextTick
       nextTick(flushSchedulerQueue)
     }
   }

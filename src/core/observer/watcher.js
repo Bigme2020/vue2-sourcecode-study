@@ -184,12 +184,17 @@ export default class Watcher {
   update () {
     /* istanbul ignore else */
     if (this.lazy) {
-      // computed watcher 会走这里
+      // 懒执行时会走这，比如 computed
+      // 在 update 后重新将 dirty 置为 true，好让响应式数据更新后
+      // 获取 computed 的时候会再次执行 computed 回调函数计算新值，并缓存到 watcher.value
       this.dirty = true
     } else if (this.sync) {
+      // 同步执行时会走这
+      // 比如 this.$watch() 或者 watch 选项时传递 sync 配置
+      // 比如 { sync: true } 让其同步执行，不走异步更新队列
       this.run()
     } else {
-      // 这边会走到 scheduler 去
+      // 将当前 watcher 放入 watcher 队列，一般都是走这个分支
       queueWatcher(this)
     }
   }
