@@ -186,7 +186,9 @@ export function mountComponent (
       measure(`vue ${name} patch`, startTag, endTag)
     }
   } else {
+    // 负责更新组件
     updateComponent = () => {
+      // 执行 _update 进行更新阶段，首先执行 _render，将组件变成 VNode
       vm._update(vm._render(), hydrating)
     }
   }

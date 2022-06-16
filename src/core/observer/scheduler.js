@@ -70,6 +70,7 @@ if (inBrowser && !isIE) {
  */
 function flushSchedulerQueue () {
   currentFlushTimestamp = getNow()
+  // flushing 置为 true，表示现在的 watcher 队列正在被刷新
   flushing = true
   let watcher, id
 
@@ -77,19 +78,31 @@ function flushSchedulerQueue () {
   // This ensures that:
   // 1. Components are updated from parent to child. (because parent is always
   //    created before the child)
+  // 1. 保证父组件在子组件之前执行
   // 2. A component's user watchers are run before its render watcher (because
   //    user watchers are created before the render watcher)
+  // 2. 用户 watcher 先于渲染 watcher 去执行
   // 3. If a component is destroyed during a parent component's watcher run,
   //    its watchers can be skipped.
+  // 3. 如果父组件执行时，子组件被销毁了，可以跳过这个子组件的 watcher 
+  // 父组件 watcher id 比子组件大
   queue.sort((a, b) => a.id - b.id)
 
   // do not cache length because more watchers might be pushed
   // as we run existing watchers
+
+  // 遍历，依次执行 watcher 的 run 方法
+  // 这里为什么采用动态计算 queue.length 呢
+  // 因为可能在 flush 的时候又有 watcher 进来了
   for (index = 0; index < queue.length; index++) {
+    // 拿出当前索引的 watcher
     watcher = queue[index]
+    // 先执行 before 钩子
     if (watcher.before) {
+      // before 是 watcher 的可选配置
       watcher.before()
     }
+    // 清空缓存，表示当前 watcher 已经被执行，当该 watcher 再次入队时就可以进来了
     id = watcher.id
     has[id] = null
     watcher.run()
@@ -185,7 +198,7 @@ export function queueWatcher (watcher: Watcher) {
     }
     // queue the flush
     if (!waiting) {
-      // waiting = false 走这里，表示当前浏览器的异步任务队列中没有 flushSchedulerQueue 函数
+      // waiting = false 走这里，表示当前浏览器的异步任务队列中没有在
       waiting = true
 
       if (process.env.NODE_ENV !== 'production' && !config.async) {

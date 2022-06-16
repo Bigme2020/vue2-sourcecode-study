@@ -7,7 +7,9 @@ import { isIE, isIOS, isNative } from './env'
 
 export let isUsingMicroTask = false
 
+// 回调队列
 const callbacks = []
+// 异步锁
 let pending = false
 
 /* 
@@ -49,7 +51,9 @@ let timerFunc
 /* istanbul ignore next, $flow-disable-line */
 // 将 flushCallbacks 放入异步微任务队列
 // 顺序：Promise > MutationObserver > setImmediate > setTimeout
-// 性能上也是这个顺序
+// 宏任务耗费的时间是大于微任务的，所以在浏览器支持的情况下，优先使用微任务。
+// 如果浏览器不支持微任务，使用宏任务
+// 但是，各种宏任务之间也有效率的不同，需要根据浏览器的支持情况，使用不同的宏任务。
 if (typeof Promise !== 'undefined' && isNative(Promise)) {
   const p = Promise.resolve()
   timerFunc = () => {

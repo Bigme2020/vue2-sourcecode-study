@@ -77,6 +77,9 @@ export default class Watcher {
       ? expOrFn.toString()
       : ''
     // parse expression for getter
+    // 这里 getter 的情况
+    //   1. 实例化渲染 watcher 的 updateComponent 函数
+    //   2. 用户 watcher 的 key 最终被 parsePath 转换成一个读取 this.key 的函数
     if (typeof expOrFn === 'function') {
       this.getter = expOrFn
     } else {
@@ -99,9 +102,12 @@ export default class Watcher {
 
   /**
    * Evaluate the getter, and re-collect dependencies.
+   * 触发 updateComponent 的执行，进行组件更新，进入 patch 阶段
+   * 更新组件时先执行 render 生成 VNode，期间触发读取操作，进行依赖收集
    */
   // get 会在 run 中和 evaluate 调用
   get () {
+    // Dep.target = this 对新值做依赖收集
     pushTarget(this)
     // console.log(Dep.target);
     let value
@@ -116,6 +122,7 @@ export default class Watcher {
           1. 用户定义的 watch 传进来的 expOrFn 是 key，那么首先 parsePath 会将其转变成函数给到 this.getter
           2. 传入 vm，这样就返回了 vm[key]，返回了监听的值
        */
+      // 触发读取操作，被 getter 拦截，收集依赖
       value = this.getter.call(vm, vm)
     } catch (e) {
       if (this.user) {
@@ -127,6 +134,7 @@ export default class Watcher {
       // "touch" every property so they are all tracked as
       // dependencies for deep watching
       if (this.deep) {
+        // 当有深度观测选项时，走 traverse
         traverse(value)
       }
       popTarget()

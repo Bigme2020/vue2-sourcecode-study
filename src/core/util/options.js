@@ -425,7 +425,7 @@ export function mergeOptions (
   for (key in parent) {
     mergeField(key)
   }
-// TODO: 这里我的初步解读和李永宁大佬的视频讲解有些不同
+  // TODO: 这里我的初步解读和李永宁大佬的视频讲解有些不同
   // 个人解读：若 child 的 key 也出现在了 parent 中，则以 parent 为优先
   // 李永宁解读：child 的选项会覆盖 parent 的选项
   for (key in child) {
