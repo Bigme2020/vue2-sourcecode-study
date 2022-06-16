@@ -278,7 +278,7 @@ export function defineComputed (
       )
     }
   }
-  // 将 computed 配置项中的 key 代理到 vue 实例上，支持了 this.xxx 访问
+  // 将 computed 配置项中的 key 代理到 vm 实例上，支持了 this.xxx 访问
   Object.defineProperty(target, key, sharedPropertyDefinition)
 }
 
@@ -300,6 +300,9 @@ function createComputedGetter (key) {
       if (Dep.target) {
         watcher.depend()
       }
+      // computed 和 watcher 的使用场景不同
+      // computed 更倾向于对监听值的简单的读取操作
+      // 而 watcher 更偏向于监听值的变化并调用回调函数进行复杂操作
       return watcher.value
     }
   }

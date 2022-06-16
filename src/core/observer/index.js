@@ -45,12 +45,19 @@ export class Observer {
     // defineReactive中的 dep 是给对象中每个 key 用的
     this.dep = new Dep()
     this.vmCount = 0
+    // __ob__标记已进行过响应式的同时
+    // 附上 this 方便后续对实例属性和方法的调用
     def(value, '__ob__', this)
     if (Array.isArray(value)) {
       // 处理数组响应式
+      // 判断 window 是否有 __proto__ 属性，对老版本 ie 做兼容
+      // obj.__proto__ 访问对象的原型链
+      // caniuse 中可以查看属性的兼容性
       if (hasProto) {
+        // 用增强好的数组原型方法对象覆盖默认的原型方法
         protoAugment(value, arrayMethods)
       } else {
+        // 直接给数组对象定义方法去实现
         copyAugment(value, arrayMethods, arrayKeys)
       }
       // 对数组中每项进行响应式处理
@@ -75,6 +82,7 @@ export class Observer {
 
   /**
    * Observe a list of Array items.
+   * 对数组中的每个元素进行响应式处理
    */
   observeArray (items: Array<any>) {
     for (let i = 0, l = items.length; i < l; i++) {
@@ -91,6 +99,7 @@ export class Observer {
  */
 function protoAugment (target, src: Object) {
   /* eslint-disable no-proto */
+  // 用增强好的数组原型方法对象覆盖默认的原型方法
   target.__proto__ = src
   /* eslint-enable no-proto */
 }
@@ -98,6 +107,7 @@ function protoAugment (target, src: Object) {
 /**
  * Augment a target Object or Array by defining
  * hidden properties.
+ * // 直接给数组对象定义方法去实现
  */
 /* istanbul ignore next */
 function copyAugment (target: Object, src: Object, keys: Array<string>) {
@@ -208,7 +218,7 @@ export function defineReactive (
       }
       // 新值如果是对象，也要重新做响应式处理
       childOb = !shallow && observe(newVal)
-      // 
+      // 当响应式数据改变，通知所有收集的 watcher，进入异步更新阶段
       dep.notify()
     }
   })
