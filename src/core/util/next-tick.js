@@ -101,7 +101,16 @@ if (typeof Promise !== 'undefined' && isNative(Promise)) {
   }
 }
 
-// 接受两个参数，回调函数和上下文
+/**
+ * 完成两件事：（需要注意，flushCallbacks 函数是 timerFunc 包装的异步执行的函数）
+ *    1. 用 try catch 包装 flushSchedulerQueue 函数，然后将其放入 callbacks 数组
+ *    2. 如果 pending = false，表示现在浏览器的任务队列中没有 flushCallbacks 函数
+ *      如果 pending = true，则表示浏览器的任务队列中已经被放入了 flushCallbacks 函数
+ *      待执行 flushCallbacks 函数时，pending 会被置为 false，表示下一个 flushCallbacks 函数可以进入异步队列了
+ * @param {*} cb 接受一个回调函数 => 用户回调 / flushSchedulerQueue
+ * @param {*} ctx 上下文
+ * @returns 
+ */
 export function nextTick (cb?: Function, ctx?: Object) {
   let _resolve
   // 这里为什么要包一层 try catch 不是为内部方法准备的

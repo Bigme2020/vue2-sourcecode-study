@@ -105,6 +105,8 @@ function flushSchedulerQueue () {
     // 清空缓存，表示当前 watcher 已经被执行，当该 watcher 再次入队时就可以进来了
     id = watcher.id
     has[id] = null
+    // 最主要的一步：执行 watcher.run
+    console.log('run', watcher);
     watcher.run()
     // in dev build, check and stop circular updates.
     if (process.env.NODE_ENV !== 'production' && has[id] != null) {
@@ -186,11 +188,10 @@ export function queueWatcher (watcher: Watcher) {
       // 定义 computed 后最终会引导 render watcher 走到这里
       queue.push(watcher)
     } else {
-      // 在刷新中
       // if already flushing, splice the watcher based on its id
       // if already past its id, it will be run next immediately.
+      // 在刷新中,根据 watcher id 由小到大进行有序排列，保证 watcher 入队后，刷新中的 watcher 队列仍然时有序的
       let i = queue.length - 1
-      // 根据 watcher id 由小到大进行有序排列，保证 watcher 入队后，刷新中的 watcher 队列仍然时有序的
       while (i > index && queue[i].id > watcher.id) {
         i--
       }
@@ -208,7 +209,12 @@ export function queueWatcher (watcher: Watcher) {
         flushSchedulerQueue()
         return
       }
-      // 这就是那个 nextTick，this.$nextTick 或 Vue.nextTick
+      /**
+       * 熟悉的 nextTick => vm.$nextTick、Vue.nextTick
+       *    1. 将用户传入回调函数或 flushSchedulerQueue 放入 callbacks 数组
+       *    2. 通过 pending 异步所控制 向浏览器任务队列中添加 flushCallbacks 函数
+       */
+      console.log('queueWatcher');
       nextTick(flushSchedulerQueue)
     }
   }

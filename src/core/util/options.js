@@ -384,6 +384,7 @@ function assertObjectType (name: string, value: any, vm: ?Component) {
 /**
  * Merge two option objects into a new one.
  * Core utility used in both instantiation and inheritance.
+ * 合并两个选项，出现相同配置项时，子选项会覆盖父选项的配置
  */
 export function mergeOptions (
   parent: Object,
@@ -398,7 +399,7 @@ export function mergeOptions (
     child = child.options
   }
 
-  // 选项的标准化处理
+  // 标准化 props、inject、directive 选项，方便后续程序的处理
   normalizeProps(child, vm)
   normalizeInject(child, vm)
   normalizeDirectives(child)
@@ -407,8 +408,11 @@ export function mergeOptions (
   // but only if it is a raw options object that isn't
   // the result of another mergeOptions call.
   // Only merged options has the _base property.
+  // 若 child._base 不存在的话则不会进行选项合并
   // 递归合并选项 有 extends 和 mixins 时做这步
   if (!child._base) {
+    // { extends }，和 mixin 很类似，基于一个组件去扩展另外一个属性
+    // 和 Vue.extend 全局 api 很像
     if (child.extends) {
       parent = mergeOptions(parent, child.extends, vm)
     }
@@ -422,11 +426,10 @@ export function mergeOptions (
   // 最后 return 的结果
   const options = {}
   let key
+  // 遍历父选项
   for (key in parent) {
     mergeField(key)
   }
-  // TODO: 这里我的初步解读和李永宁大佬的视频讲解有些不同
-  // 个人解读：若 child 的 key 也出现在了 parent 中，则以 parent 为优先
   // 李永宁解读：child 的选项会覆盖 parent 的选项
   for (key in child) {
     if (!hasOwn(parent, key)) {
@@ -434,7 +437,9 @@ export function mergeOptions (
     }
   }
   function mergeField (key) {
+    // strats = Object.create(null)
     const strat = strats[key] || defaultStrat
+    // 如果 childVal 存在则优先使用 childVal，否则使用 parentVal
     options[key] = strat(parent[key], child[key], vm, key)
   }
   return options

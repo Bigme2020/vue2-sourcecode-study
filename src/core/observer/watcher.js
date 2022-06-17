@@ -223,10 +223,14 @@ export default class Watcher {
         this.deep
       ) {
         // set new value
+        // 将现在的值给到老值，并更新现在的值
         const oldValue = this.value
         this.value = value
         if (this.user) {
           // 用户定义的 watcher 最终会在监听到值更新时走到这里调用 callback
+          // 比如:
+          // watch(() => {}, (val, oldVal) => {})
+          // value 和 oldValue 就是从这传入的
           const info = `callback for watcher "${this.expression}"`
           invokeWithErrorHandling(this.cb, this.vm, [value, oldValue], this.vm, info)
         } else {

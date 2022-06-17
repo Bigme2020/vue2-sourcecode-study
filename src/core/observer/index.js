@@ -228,23 +228,54 @@ export function defineReactive (
  * Set a property on an object. Adds the new property and
  * triggers change notification if the property doesn't
  * already exist.
+ * {
+ *  data() {
+ *    return {
+ *      key1: xxx, 定义好的是有响应式的
+ *      “key2：xxx”, 而如果这个 key2 是在运行时动态添加的
+ *       不用 set 是没法获得响应式的
+ *      arr: [1,2,3,{key:value}]
+ *    }
+ *  }，
+ *  // 例如如下方法的设置
+ *  methods: {
+ *    change() {
+ *      this.key2 = 'val' 这样子是不具有响应式的，因为根数据对象上的动态添加没法响应式处理
+ *      Vue.set(this, 'key2', 'val') 报错，不能这么做，源码中也写了会直接报错提示
+ *      this.arr[0] = 4 这样子不具有响应式，因为数组中元素除了对象都没有经过响应式处理，
+ *                      必须用 7 个重写的方法才有响应式
+ *      Vue.set(this.arr, 0, 111)
+ *      this.arr[3] = 'new' 这样子是可以的，因为这个是指向对象，而对象是被响应式处理过的
+ *    }
+ *  }
+ * }
  */
+// 通过 Vue.set 或者 this.$set 方法给 target 的指定 key 设置值 val
+// 如果 target 是对象，并且 key 原本不存在，则为新 key 设置响应式，然后执行依赖通知
 export function set (target: Array<any> | Object, key: any, val: any): any {
+  // 异常处理
   if (process.env.NODE_ENV !== 'production' &&
     (isUndef(target) || isPrimitive(target))
   ) {
     warn(`Cannot set reactive property on undefined, null, or primitive value: ${(target: any)}`)
   }
+  // 处理数组，Vue.set(arr, idx, val)
+  // 上面写法是将 val 添加到 arr[idx] 的位置
+  // 原理就是通过数组的 splice 方法实现的
   if (Array.isArray(target) && isValidArrayIndex(key)) {
     target.length = Math.max(target.length, key)
     target.splice(key, 1, val)
     return val
   }
+  // 处理对象的情况
   if (key in target && !(key in Object.prototype)) {
     target[key] = val
     return val
   }
   const ob = (target: any).__ob__
+  // 异常提示
+  // 不能向 Vue 实例或者 $data 动态添加响应式属性，vmCount 的用处之一
+  // this.$data 的 ob.vmCount = 1，表示根数据，其他的都是 0
   if (target._isVue || (ob && ob.vmCount)) {
     process.env.NODE_ENV !== 'production' && warn(
       'Avoid adding reactive properties to a Vue instance or its root $data ' +
@@ -252,11 +283,14 @@ export function set (target: Array<any> | Object, key: any, val: any): any {
     )
     return val
   }
+  // 若 target 不是响应式对象，新属性会被设置，但是不会做响应式处理
   if (!ob) {
     target[key] = val
     return val
   }
+  // 对新属性设置 getter 和 setter，读取时收集依赖，更新时通知依赖更新
   defineReactive(ob.value, key, val)
+  // 直接通知依赖更新
   ob.dep.notify()
   return val
 }
@@ -270,6 +304,7 @@ export function del (target: Array<any> | Object, key: any) {
   ) {
     warn(`Cannot delete reactive property on undefined, null, or primitive value: ${(target: any)}`)
   }
+  // 数组依旧用 splice 方法删除元素
   if (Array.isArray(target) && isValidArrayIndex(key)) {
     target.splice(key, 1)
     return
@@ -282,6 +317,7 @@ export function del (target: Array<any> | Object, key: any) {
     )
     return
   }
+  // 处理对象 若对象没有 key 直接返回
   if (!hasOwn(target, key)) {
     return
   }
@@ -289,6 +325,7 @@ export function del (target: Array<any> | Object, key: any) {
   if (!ob) {
     return
   }
+  // 触发通知依赖更新
   ob.dep.notify()
 }
 
