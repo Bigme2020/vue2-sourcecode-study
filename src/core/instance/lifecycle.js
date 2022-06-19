@@ -56,6 +56,7 @@ export function initLifecycle (vm: Component) {
 }
 
 export function lifecycleMixin (Vue: Class<Component>) {
+  // 负责更新页面，页面首次渲染和后续更新的入口位置，也是 patch 的入口位置
   Vue.prototype._update = function (vnode: VNode, hydrating?: boolean) {
     const vm: Component = this
     const prevEl = vm.$el
@@ -66,6 +67,7 @@ export function lifecycleMixin (Vue: Class<Component>) {
     // based on the rendering backend used.
     if (!prevVnode) {
       // initial render
+      // 进入 patch 阶段（patch、diff算法）
       // 首次渲染
       vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false /* removeOnly */)
     } else {
@@ -105,10 +107,12 @@ export function lifecycleMixin (Vue: Class<Component>) {
     vm._isBeingDestroyed = true
     // remove self from parent
     const parent = vm.$parent
+    // 将自己从父组件的 children 中移除
     if (parent && !parent._isBeingDestroyed && !vm.$options.abstract) {
       remove(parent.$children, vm)
     }
     // teardown watchers
+    // 移除 watcher
     if (vm._watcher) {
       vm._watcher.teardown()
     }
@@ -124,16 +128,19 @@ export function lifecycleMixin (Vue: Class<Component>) {
     // call the last hook...
     vm._isDestroyed = true
     // invoke destroy hooks on current rendered tree
+    // 更新页面
     vm.__patch__(vm._vnode, null)
     // fire destroyed hook
     callHook(vm, 'destroyed')
     // turn off all instance listeners.
+    // 移除所有事件监听器
     vm.$off()
     // remove __vue__ reference
     if (vm.$el) {
       vm.$el.__vue__ = null
     }
     // release circular reference (#6759)
+    // 断开与父组件联系
     if (vm.$vnode) {
       vm.$vnode.parent = null
     }

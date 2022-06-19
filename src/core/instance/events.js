@@ -51,17 +51,25 @@ export function updateComponentListeners (
 
 export function eventsMixin (Vue: Class<Component>) {
   const hookRE = /^hook:/
+  // 将所有的事件和对应的回调放到 vm._events 对象对象上，格式：
+  // {event1: [cb1,cb2]}
+  // this.$on('custom-click', function() {xxx})
   Vue.prototype.$on = function (event: string | Array<string>, fn: Function): Component {
     const vm: Component = this
+    // 事件为数组的情况
+    // this.$on([event1,event2,...], function() {xxx})
     if (Array.isArray(event)) {
       for (let i = 0, l = event.length; i < l; i++) {
         vm.$on(event[i], fn)
       }
     } else {
+      // 一个事件可以设置多个响应函数
       (vm._events[event] || (vm._events[event] = [])).push(fn)
       // optimize hook:event cost by using a boolean flag marked at registration
       // instead of a hash lookup
+      // <comp @hook:mounted="handleHookMounted" />
       if (hookRE.test(event)) {
+        // 置为 true，标记当前组件实例存在 hook event
         vm._hasHookEvent = true
       }
     }
@@ -79,14 +87,22 @@ export function eventsMixin (Vue: Class<Component>) {
     return vm
   }
 
+  /**
+   * 移除 vm._events 对象上指定事件（key）的指定回调函数
+   * @param {*} event 
+   * @param {*} fn 
+   * @returns 
+   */
   Vue.prototype.$off = function (event?: string | Array<string>, fn?: Function): Component {
     const vm: Component = this
     // all
+    // 如果没传入参数，移除所有监听器，直接将 vm._events 置为空对象
     if (!arguments.length) {
       vm._events = Object.create(null)
       return vm
     }
     // array of events
+    // 若第一个参数是数组，依次递归清除
     if (Array.isArray(event)) {
       for (let i = 0, l = event.length; i < l; i++) {
         vm.$off(event[i], fn)
@@ -94,15 +110,18 @@ export function eventsMixin (Vue: Class<Component>) {
       return vm
     }
     // specific event
+    // 获取指定事件的回调函数
     const cbs = vm._events[event]
     if (!cbs) {
       return vm
     }
+    // 若没有传入 fn，直接全部移除
     if (!fn) {
       vm._events[event] = null
       return vm
     }
     // specific handler
+    // 若指定移除某个回调，在对应的数组中遍历寻找这个回调并移除
     let cb
     let i = cbs.length
     while (i--) {
@@ -117,6 +136,10 @@ export function eventsMixin (Vue: Class<Component>) {
 
   Vue.prototype.$emit = function (event: string): Component {
     const vm: Component = this
+    // 这里通过下面的提示我们知道 html 解析 @customClick 会最终变成 @customclick
+    // 所以最好以后不要用驼峰，最好用连字符
+    // <comp @custom-click='handleClick‘>
+    // $on('custom-click', function(){}) $emit('custom-click')
     if (process.env.NODE_ENV !== 'production') {
       const lowerCaseEvent = event.toLowerCase()
       if (lowerCaseEvent !== event && vm._events[lowerCaseEvent]) {
@@ -129,12 +152,17 @@ export function eventsMixin (Vue: Class<Component>) {
         )
       }
     }
+    // 从 vm._events 对象中获取指定事件的所有回调函数
     let cbs = vm._events[event]
     if (cbs) {
+      // 数组转换，将类数组转换为数组
       cbs = cbs.length > 1 ? toArray(cbs) : cbs
+      // this.$emit('custom-click', arg1, arg2)
+      // 这里 args 最终得到的是 [arg1, arg2]
       const args = toArray(arguments, 1)
       const info = `event handler for "${event}"`
       for (let i = 0, l = cbs.length; i < l; i++) {
+        // 执行回调函数
         invokeWithErrorHandling(cbs[i], vm, args, vm, info)
       }
     }

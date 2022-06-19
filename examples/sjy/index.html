@@ -9,7 +9,7 @@
 <body>
   <div id="app">
     {{hello1}}
-    <comp></comp>
+    <comp @custom-click="test"></comp>
     <button @click="handleClick">123</button>
   </div>
 
@@ -26,6 +26,9 @@
         hello: 'hello Vue'
       },
       methods: {
+        test() {
+          console.log('customClick');
+        },
         handleClick() {
           this.hello = this.hello + '2'
         }

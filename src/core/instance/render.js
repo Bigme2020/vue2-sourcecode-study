@@ -62,16 +62,24 @@ export function setCurrentRenderingInstance (vm: Component) {
 
 export function renderMixin (Vue: Class<Component>) {
   // install runtime convenience helpers
+  // 在组件实例上挂载一些运行时需要用到的工具方法
   installRenderHelpers(Vue.prototype)
 
+  // this.$nextTick 的初始化就是在这完成的
   Vue.prototype.$nextTick = function (fn: Function) {
     return nextTick(fn, this)
   }
 
+  // 执行组件的 render 函数,得到组件的 VNode
   Vue.prototype._render = function (): VNode {
     const vm: Component = this
+    // 获取 render 函数
+    // render 函数怎么来的?
+    //  1.用户实例化 vue 时提供了 render 配置项
+    //  2.编译器编译模板生成 render
     const { render, _parentVnode } = vm.$options
 
+    // 标准化作用域插槽
     if (_parentVnode) {
       vm.$scopedSlots = normalizeScopedSlots(
         _parentVnode.data.scopedSlots,
@@ -90,6 +98,7 @@ export function renderMixin (Vue: Class<Component>) {
       // separately from one another. Nested component's render fns are called
       // when parent component is patched.
       currentRenderingInstance = vm
+      // 执行 render 函数得到组件的 VNode
       vnode = render.call(vm._renderProxy, vm.$createElement)
     } catch (e) {
       handleError(e, vm, `render`)
@@ -116,12 +125,14 @@ export function renderMixin (Vue: Class<Component>) {
     // return empty vnode in case the render function errored out
     if (!(vnode instanceof VNode)) {
       if (process.env.NODE_ENV !== 'production' && Array.isArray(vnode)) {
+        // 这里就是 Vue2 不支持多根节点的原因
         warn(
           'Multiple root nodes returned from render function. Render function ' +
           'should return a single root node.',
           vm
         )
       }
+      // 于是就直接返回了空的节点
       vnode = createEmptyVNode()
     }
     // set parent

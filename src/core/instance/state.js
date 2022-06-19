@@ -383,10 +383,13 @@ export function stateMixin (Vue: Class<Component>) {
   // flow somehow has problems with directly declared definition object
   // when using Object.defineProperty, so we have to procedurally build up
   // the object here.
+  // 处理 data 数据，定义 get 方法，访问 this._data
   const dataDef = {}
   dataDef.get = function () { return this._data }
+  // 处理 props 数据
   const propsDef = {}
   propsDef.get = function () { return this._props }
+  // 异常提示
   if (process.env.NODE_ENV !== 'production') {
     dataDef.set = function () {
       warn(
@@ -399,9 +402,12 @@ export function stateMixin (Vue: Class<Component>) {
       warn(`$props is readonly.`, this)
     }
   }
+  // 将 $data 和 $props 挂载到 Vue 原型链，支持通过 this.$data 和 this.$props 访问
   Object.defineProperty(Vue.prototype, '$data', dataDef)
   Object.defineProperty(Vue.prototype, '$props', propsDef)
 
+  // 将全局 API 放到原型上
+  // 其实就是全局 API 的别名
   Vue.prototype.$set = set
   Vue.prototype.$delete = del
 
@@ -413,7 +419,7 @@ export function stateMixin (Vue: Class<Component>) {
     const vm: Component = this
     // 如果从 initWatch 看下来会疑惑，之前已经对 cb 处理过了，为什么这里还要处理呢
     // 原因是用户可能手动调用 this.$watch 并传入对象
-    // 所以还是要处理一波 cb 的情况，确保 cb 肯定是一个函数
+    // 所以还是要处理一波 cb 的情况，确保 cb 转换后肯定是一个函数
     if (isPlainObject(cb)) {
       return createWatcher(vm, expOrFn, cb, options)
     }

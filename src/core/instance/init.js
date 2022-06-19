@@ -69,8 +69,8 @@ export function initMixin (Vue: Class<Component>) {
     // 组件关系属性的初始化，比如：$parent $root $children $refs
     initLifecycle(vm)
     // 初始化自定义事件
-    // <comp @click="handleClick"></comp>
     // 组件上事件的监听其实是子组件自己在监听，也就是说谁触发谁监听
+    // 将 <comp @click="handleClick"></comp> 上的事件通过里边的 updateListeners 转换成如下形式
     // this.$emit('click') 编译成 this.$on('click', function handleClick() {})
     initEvents(vm)
     // 初始化插槽，获取 this.$slots，定义this._c,即 createElement 方法，平时的使用的 h 函数
