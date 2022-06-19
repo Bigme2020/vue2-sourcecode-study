@@ -4,6 +4,7 @@ import { ASSET_TYPES } from 'shared/constants'
 import { defineComputed, proxy } from '../instance/state'
 import { extend, mergeOptions, validateComponentName } from '../util/index'
 
+// 
 export function initExtend (Vue: GlobalAPI) {
   /**
    * Each instance constructor, including Vue, has a unique
@@ -20,19 +21,23 @@ export function initExtend (Vue: GlobalAPI) {
     extendOptions = extendOptions || {}
     const Super = this
     const SuperId = Super.cid
+    // 用同一个配置项多次调用 extend 方法时，第二次开始就会使用缓存
     const cachedCtors = extendOptions._Ctor || (extendOptions._Ctor = {})
     if (cachedCtors[SuperId]) {
       return cachedCtors[SuperId]
     }
 
+    // 验证组件名称
     const name = extendOptions.name || Super.options.name
     if (process.env.NODE_ENV !== 'production' && name) {
       validateComponentName(name)
     }
 
+    // 重点，定义一个 Vue 子类
     const Sub = function VueComponent (options) {
       this._init(options)
     }
+    // 设置子类的原型对象 
     Sub.prototype = Object.create(Super.prototype)
     Sub.prototype.constructor = Sub
     Sub.cid = cid++
@@ -63,7 +68,14 @@ export function initExtend (Vue: GlobalAPI) {
       Sub[type] = Super[type]
     })
     // enable recursive self-lookup
+    // 组件递归调用
     if (name) {
+      // {
+      //   name: 'Comp',
+      //   components: {
+      //     'Comp': Comp
+      //   }
+      // }
       Sub.options.components[name] = Sub
     }
 
@@ -75,6 +87,7 @@ export function initExtend (Vue: GlobalAPI) {
     Sub.sealedOptions = extend({}, Sub.options)
 
     // cache constructor
+    // 进行缓存
     cachedCtors[SuperId] = Sub
     return Sub
   }
