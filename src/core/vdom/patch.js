@@ -346,11 +346,14 @@ export function createPatchFunction (backend) {
 
   function invokeDestroyHook (vnode) {
     let i, j
+    // 获取 data 对象
     const data = vnode.data
     if (isDef(data)) {
+      // 执行 data.hook.destroy 钩子
       if (isDef(i = data.hook) && isDef(i = i.destroy)) i(vnode)
       for (i = 0; i < cbs.destroy.length; ++i) cbs.destroy[i](vnode)
     }
+    // 递归的销毁所有子节点
     if (isDef(i = vnode.children)) {
       for (j = 0; j < vnode.children.length; ++j) {
         invokeDestroyHook(vnode.children[j])
@@ -697,7 +700,10 @@ export function createPatchFunction (backend) {
     }
   }
 
+  // patch 阶段
   return function patch (oldVnode, vnode, hydrating, removeOnly) {
+    // 若新节点不存在，老节点存在
+    // 销毁老节点
     if (isUndef(vnode)) {
       if (isDef(oldVnode)) invokeDestroyHook(oldVnode)
       return
@@ -706,16 +712,22 @@ export function createPatchFunction (backend) {
     let isInitialPatch = false
     const insertedVnodeQueue = []
 
+    // 新节点存在，老节点不存在
+    // 首次渲染组件时会走这里
     if (isUndef(oldVnode)) {
       // empty mount (likely as component), create new root element
       isInitialPatch = true
       createElm(vnode, insertedVnodeQueue)
     } else {
+      // 判断 oldVnode 是否为一个真实元素
       const isRealElement = isDef(oldVnode.nodeType)
+      // oldVnode 不是真实元素，而且 oldVnode 和 vnode 是同一个节点，则进行 patch
       if (!isRealElement && sameVnode(oldVnode, vnode)) {
         // patch existing root node
         patchVnode(oldVnode, vnode, insertedVnodeQueue, null, null, removeOnly)
       } else {
+        // 当 oldVnode 是真实节点
+        // 将此真实节点转换成虚拟节点
         if (isRealElement) {
           // mounting to a real element
           // check if this is server-rendered content and if we can perform
@@ -740,14 +752,19 @@ export function createPatchFunction (backend) {
           }
           // either not server-rendered, or hydration failed.
           // create an empty node and replace it
+          // 基于 oldVnode，也就是真实节点创建一个 vnode 并赋值给 oldVnode
+          // 此时 oldVnode 就变成了虚拟节点
           oldVnode = emptyNodeAt(oldVnode)
         }
 
         // replacing existing element
+        // 获取节点的真实元素
         const oldElm = oldVnode.elm
+        // 获取此真实元素的父节点，比如 body 元素
         const parentElm = nodeOps.parentNode(oldElm)
 
         // create new node
+        // 创建整个 DOM 树
         createElm(
           vnode,
           insertedVnodeQueue,

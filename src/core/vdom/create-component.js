@@ -32,6 +32,7 @@ import {
   renderRecyclableComponentTemplate
 } from 'weex/runtime/recycle-list/render-component-template'
 
+// patch 期间，在组件的 VNode 上调用内联钩子
 // inline hooks to be invoked on component VNodes during patch
 const componentVNodeHooks = {
   init (vnode: VNodeWithData, hydrating: boolean): ?boolean {
@@ -84,6 +85,12 @@ const componentVNodeHooks = {
     }
   },
 
+  /**
+   * 销毁组件
+   *  1. 如果组件被 keep-alive 组件包裹，则使组件失活，从而缓存组件的状态
+   *  2. 如果组件没有被 keep-alive 包裹，则直接调用实例的 $destroy 方法销毁组件
+   * @param {*} vnode 
+   */
   destroy (vnode: MountedComponentVNode) {
     const { componentInstance } = vnode
     if (!componentInstance._isDestroyed) {

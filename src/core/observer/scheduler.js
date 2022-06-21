@@ -199,7 +199,7 @@ export function queueWatcher (watcher: Watcher) {
     }
     // queue the flush
     if (!waiting) {
-      // waiting = false 走这里，表示当前浏览器的异步任务队列中没有在
+      // waiting = false 走这里，表示当前浏览器的异步任务队列中没有在 flushSchedulerQueue
       waiting = true
 
       if (process.env.NODE_ENV !== 'production' && !config.async) {
