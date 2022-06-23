@@ -348,18 +348,36 @@ export function deactivateChildComponent (vm: Component, direct?: boolean) {
     callHook(vm, 'deactivated')
   }
 }
-
+/**
+ * callhook(vm, 'mounted')
+ * @param {*} vm 
+ * @param {*} hook 
+ */
 export function callHook (vm: Component, hook: string) {
+  // 在执行生命周期钩子函数期间禁止收集依赖，为的是不会在生命周期钩子函数中进行无意义的依赖收集
   // #7573 disable dep collection when invoking lifecycle hooks
   pushTarget()
+  // 从组件的配置项中获取这个 hook 生命周期钩子函数，比如 mounted
+  // handlers 其实是一个数组，因为有时候我们可能会写多个生命周期钩子，它会收集成一个数组
   const handlers = vm.$options[hook]
   const info = `${hook} hook`
   if (handlers) {
     for (let i = 0, j = handlers.length; i < j; i++) {
+      // 遍历执行这些生命周期钩子函数
       invokeWithErrorHandling(handlers[i], vm, null, vm, info)
     }
   }
+  // hook event
+  // 什么是 Hook Event？
+  // Hook Event 是 Vue 自定义事件结合生命周期钩子实现的一种从组件外部为组件注入额外生命周期方法的功能
+  // vm._hasHookEvent 标识组件是否有 hook event
+  // 这是在 vm.$on 中处理组件自定义事件时设置上去的
   if (vm._hasHookEvent) {
+    // 通过 $emit 方法触发 hook:生命周期钩子 事件
+    // 执行 vm._events['hook:生命周期钩子'] 数组当中的所有函数
+    // 那么这个的执行顺序是什么呢？
+    // 很显然 hook 在钩子之后执行，因为上面刚执行完生命周期钩子的回调，现在才来执行 hook
+    // 但是可以在回调有异步执行代码的时候 使用 hook 来巧妙的达到 hook 提前执行的错觉
     vm.$emit('hook:' + hook)
   }
   popTarget()

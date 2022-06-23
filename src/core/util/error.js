@@ -33,10 +33,11 @@ export function handleError (err: Error, vm: any, info: string) {
   }
 }
 
+// 主要就是执行传进来的函数，通过 try catch 包裹了一下
 export function invokeWithErrorHandling (
-  handler: Function,
-  context: any,
-  args: null | any[],
+  handler: Function, // 传进来的函数
+  context: any, // 上下文
+  args: null | any[], // 参数
   vm: any,
   info: string
 ) {

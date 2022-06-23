@@ -9,7 +9,7 @@
 <body>
   <div id="app">
     {{hello1}}
-    <comp @custom-click="test"></comp>
+    <comp @custom-click="test" @hook:created="handleHookMounted"></comp>
     <button @click="handleClick">123</button>
   </div>
 
@@ -17,7 +17,28 @@
   <script>
     // 全局注册组件，这一步是为了验证initMixin中的将全局配置合并到根组件的局部配置
     Vue.component('comp', {
-      template: '<div>I am comp</div>'
+      template: '<div>I am comp {{item}}</div>',
+      data() {
+        return {
+          item: ''
+        }
+      },
+      // 这里为了介绍 hook event 的作用
+      // 我们需要把这个当作第三方业务组件,即无法访问内部生命周期
+      // 那么我们这里该如何通过外部定义的方式，在以下这个地方赋值之前添加点东西呢
+      // 答案就是 hook event
+      mounted() {
+        console.log('mounted');
+        setTimeout(() => {
+          this.item = 1111111111
+        }, 4000)
+      },
+      created() {
+        console.log('created');
+        setTimeout(() => {
+          this.item = 2222222222
+        }, 4000)
+      }
     })
     // debugger
     const vm = new Vue({
@@ -31,6 +52,9 @@
         },
         handleClick() {
           this.hello = this.hello + '2'
+        },
+        handleHookMounted() {
+          console.log('loading');
         }
       },
       computed: {

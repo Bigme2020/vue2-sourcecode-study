@@ -50,6 +50,7 @@ export function updateComponentListeners (
 }
 
 export function eventsMixin (Vue: Class<Component>) {
+  // 检测 hook 的正则
   const hookRE = /^hook:/
   // 将所有的事件和对应的回调放到 vm._events 对象对象上，格式：
   // {event1: [cb1,cb2]}
@@ -67,6 +68,7 @@ export function eventsMixin (Vue: Class<Component>) {
       (vm._events[event] || (vm._events[event] = [])).push(fn)
       // optimize hook:event cost by using a boolean flag marked at registration
       // instead of a hash lookup
+      // hook event
       // <comp @hook:mounted="handleHookMounted" />
       if (hookRE.test(event)) {
         // 置为 true，标记当前组件实例存在 hook event
