@@ -51,6 +51,11 @@ function decodeAttr (value, shouldDecodeNewlines) {
   return value.replace(re, match => decodingMap[match])
 }
 
+/**
+ * 通过循环遍历 html 模版字符串，依次处理其中的各个标签，以及标签上的属性
+ * @param {*} html html 模版
+ * @param {*} options 配置项
+ */
 export function parseHTML (html, options) {
   const stack = []
   const expectHTML = options.expectHTML
@@ -66,12 +71,16 @@ export function parseHTML (html, options) {
       if (textEnd === 0) {
         // Comment:
         if (comment.test(html)) {
+          // 若为注释，则继续查找是否存在’-->‘
           const commentEnd = html.indexOf('-->')
 
           if (commentEnd >= 0) {
+            // 若存在'-->',继续判断 options 中是否保留注释
             if (options.shouldKeepComment) {
+              // 若保留注释，则把注释截取出来传给 options.comment，创建注释类型的 AST 节点
               options.comment(html.substring(4, commentEnd), index, index + commentEnd + 3)
             }
+            // 将游标移动至’-->‘之后，继续向后解析
             advance(commentEnd + 3)
             continue
           }
@@ -179,6 +188,7 @@ export function parseHTML (html, options) {
   // Clean up any remaining tags
   parseEndTag()
 
+  // 用来移动解析游标的，解析完一部分就把游标向后移动一部分，确保不会重复解析
   function advance (n) {
     index += n
     html = html.substring(n)
@@ -226,6 +236,7 @@ export function parseHTML (html, options) {
 
     const l = match.attrs.length
     const attrs = new Array(l)
+    // attrs = [{name: attrName, value: attrVal}]
     for (let i = 0; i < l; i++) {
       const args = match.attrs[i]
       const value = args[3] || args[4] || args[5] || ''
@@ -243,6 +254,7 @@ export function parseHTML (html, options) {
     }
 
     if (!unary) {
+      // 非自闭合标签，将其推入 stack
       stack.push({ tag: tagName, lowerCasedTag: tagName.toLowerCase(), attrs: attrs, start: match.start, end: match.end })
       lastTag = tagName
     }

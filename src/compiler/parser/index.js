@@ -92,6 +92,8 @@ export function parse (
     el.attrsMap['v-bind:is'] ||
     !(el.attrsMap.is ? isReservedTag(el.attrsMap.is) : isReservedTag(el.tag))
   )
+
+  // 三个数组，每个元素都是一个函数，这些函数分别是 style、class、model 这三个模块中导出的对应函数
   transforms = pluckModuleFunction(options.modules, 'transformNode')
   preTransforms = pluckModuleFunction(options.modules, 'preTransformNode')
   postTransforms = pluckModuleFunction(options.modules, 'postTransformNode')
@@ -205,6 +207,7 @@ export function parse (
     }
   }
 
+  // 解析 HTML 模板字符串，处理所有标签以及标签上的属性
   parseHTML(template, {
     warn,
     expectHTML: options.expectHTML,
@@ -214,6 +217,14 @@ export function parse (
     shouldDecodeNewlinesForHref: options.shouldDecodeNewlinesForHref,
     shouldKeepComment: options.comments,
     outputSourceRange: options.outputSourceRange,
+    /**
+     * 当解析到开始标签时，调用该函数
+     * @param {*} tag 标签名
+     * @param {*} attrs 属性数组
+     * @param {*} unary 是否为自闭合标签
+     * @param {*} start 标签的开始索引
+     * @param {*} end 标签的结束索引
+     */
     start (tag, attrs, unary, start, end) {
       // check namespace.
       // inherit parent ns if there is one
@@ -225,6 +236,7 @@ export function parse (
         attrs = guardIESVGBug(attrs)
       }
 
+      // start核心：生成当前标签的 AST 对象
       let element: ASTElement = createASTElement(tag, attrs, currentParent)
       if (ns) {
         element.ns = ns
@@ -301,6 +313,7 @@ export function parse (
       }
     },
 
+    // 当解析到结束标签时，调用该函数
     end (tag, start, end) {
       const element = stack[stack.length - 1]
       // pop stack
@@ -312,6 +325,7 @@ export function parse (
       closeElement(element)
     },
 
+    // 当解析到文本时，调用该函数
     chars (text: string, start: number, end: number) {
       if (!currentParent) {
         if (process.env.NODE_ENV !== 'production') {
@@ -354,6 +368,9 @@ export function parse (
       } else {
         text = preserveWhitespace ? ' ' : ''
       }
+      // chars核心：当内部是动态文本即带变量的内容时
+      //  创建 动态文本 AST 节点
+      // 不然创建 静态文本 AST 节点
       if (text) {
         if (!inPre && whitespaceOption === 'condense') {
           // condense consecutive whitespaces into single space
@@ -383,10 +400,12 @@ export function parse (
         }
       }
     },
+    // 当解析到注释时，调用该函数
     comment (text: string, start, end) {
       // adding anything as a sibling to the root node is forbidden
       // comments should still be allowed, but ignored
       if (currentParent) {
+        // comment核心：创建一个注释类型的 AST 节点
         const child: ASTText = {
           type: 3,
           text,
@@ -400,6 +419,8 @@ export function parse (
       }
     }
   })
+
+  // 返回生成的 AST 对象
   return root
 }
 

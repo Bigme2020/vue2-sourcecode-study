@@ -7,9 +7,10 @@ import { createCompileToFunctionFn } from './to-function'
 export function createCompilerCreator (baseCompile: Function): Function {
   return function createCompiler (baseOptions: CompilerOptions) {
     function compile (
-      template: string,
-      options?: CompilerOptions
+      template: string, // 字符串模板
+      options?: CompilerOptions // 编译选项
     ): CompiledResult {
+      // 以平台特有的编译配置为原型创建编译选项对象
       const finalOptions = Object.create(baseOptions)
       const errors = []
       const tips = []
