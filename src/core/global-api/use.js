@@ -17,7 +17,8 @@ export function initUse (Vue: GlobalAPI) {
     // additional parameters
     // 取出 Vue.use() 中第二个位置开始的参数
     const args = toArray(arguments, 1)
-    // 这里传入的就是 Vue 实例，所以 install 方法中能接收到 Vue
+    // 这里传入的就是 Vue 构造函数，所以 install 方法中能接收到 Vue
+    // 这里的 this 是 Vue 构造函数
     args.unshift(this)
     if (typeof plugin.install === 'function') {
       // plugin 是对象的情况，执行 plugin.install
