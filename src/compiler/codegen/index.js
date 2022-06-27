@@ -40,12 +40,27 @@ export type CodegenResult = {
   staticRenderFns: Array<string>
 };
 
+/**
+ * 从 AST 生成渲染函数
+ * @returns {
+ *   render: `with(this){return _c(tag, data, children)}`,
+ *   staticRenderFns: state.staticRenderFns
+ * } 
+ */
 export function generate (
   ast: ASTElement | void,
   options: CompilerOptions
 ): CodegenResult {
+  // 实例化 CodegenState 对象
   const state = new CodegenState(options)
   // fix #11483, Root level <script> tags should not be rendered.
+  // 生成字符串格式的代码，比如：'_c(tag, data, children, normalizationType)'
+  // data 为节点上的属性组成 JSON 字符串，比如 '{ key: xx, ref: xx, ... }'
+  // children 为所有子节点的字符串格式的代码组成的字符串数组，格式：
+  //     `['_c(tag, data, children)', ...],normalizationType`，
+  //     最后的 normalization 是 _c 的第四个参数，
+  //     表示节点的规范化类型，不是重点，不需要关注
+  // 当然 code 并不一定就是 _c，也有可能是其它的，比如整个组件都是静态的，则结果就为 _m(0)
   const code = ast ? (ast.tag === 'script' ? 'null' : genElement(ast, state)) : '_c("div")'
   return {
     render: `with(this){return ${code}}`,

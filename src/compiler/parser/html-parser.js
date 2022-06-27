@@ -14,16 +14,25 @@ import { isNonPhrasingTag } from 'web/compiler/util'
 import { unicodeRegExp } from 'core/util/lang'
 
 // Regular Expressions for parsing tags and attributes
+
+// 属性正则
 const attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/
 const dynamicArgAttribute = /^\s*((?:v-[\w-]+:|@|:|#)\[[^=]+?\][^\s"'<>\/=]*)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/
+
+// 匹配开始标签的正则
 const ncname = `[a-zA-Z_][\\-\\.0-9_a-zA-Z${unicodeRegExp.source}]*`
 const qnameCapture = `((?:${ncname}\\:)?${ncname})`
 const startTagOpen = new RegExp(`^<${qnameCapture}`)
+
 const startTagClose = /^\s*(\/?)>/
 const endTag = new RegExp(`^<\\/${qnameCapture}[^>]*>`)
+
+// doctype 正则
 const doctype = /^<!DOCTYPE [^>]+>/i
 // #7298: escape - to avoid being passed as HTML comment when inlined in page
 const comment = /^<!\--/
+
+// 条件注释正则
 const conditionalComment = /^<!\[/
 
 // Special Elements (can contain anything)
@@ -196,9 +205,10 @@ export function parseHTML (html, options) {
 
   function parseStartTag () {
     const start = html.match(startTagOpen)
+    // '<div></div>'.match(startTagOpen)  => ['<div','div',index:0,input:'<div></div>']
     if (start) {
       const match = {
-        tagName: start[1],
+        tagName: start[1], // div
         attrs: [],
         start: index
       }
