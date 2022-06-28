@@ -35,27 +35,37 @@ import {
 // patch 期间，在组件的 VNode 上调用内联钩子
 // inline hooks to be invoked on component VNodes during patch
 const componentVNodeHooks = {
+  // 初始化
   init (vnode: VNodeWithData, hydrating: boolean): ?boolean {
     if (
       vnode.componentInstance &&
       !vnode.componentInstance._isDestroyed &&
       vnode.data.keepAlive
     ) {
+      // 被 keep-alive 包裹的组件走这
       // kept-alive components, treat as a patch
       const mountedNode: any = vnode // work around flow
       componentVNodeHooks.prepatch(mountedNode, mountedNode)
     } else {
+      // 创建组件实例，即 new vnode.componentOptions.Ctor(options) => 得到 Vue 组件实例
+      // 将组件实例赋值给 vnode.componentInstance
       const child = vnode.componentInstance = createComponentInstanceForVnode(
         vnode,
         activeInstance
       )
+      // 执行组件的 $mount 方法，进入挂载阶段，接下来通过编译器得到 render 函数
+      // 接着走挂载、patch 直到组件渲染到页面
       child.$mount(hydrating ? vnode.elm : undefined, hydrating)
     }
   },
 
+  // 更新 VNode，用新的 VNode 配置更新旧的 VNode 上的各种配置
   prepatch (oldVnode: MountedComponentVNode, vnode: MountedComponentVNode) {
+    // 新 VNode 的组件配置项
     const options = vnode.componentOptions
+    // 老 VNode 的组件实例
     const child = vnode.componentInstance = oldVnode.componentInstance
+    // 用 VNode 上的属性更新 child 上的各种属性
     updateChildComponent(
       child,
       options.propsData, // updated props
@@ -65,6 +75,7 @@ const componentVNodeHooks = {
     )
   },
 
+  // 执行组件的 mounted 生命周期钩子
   insert (vnode: MountedComponentVNode) {
     const { context, componentInstance } = vnode
     if (!componentInstance._isMounted) {
@@ -89,14 +100,17 @@ const componentVNodeHooks = {
    * 销毁组件
    *  1. 如果组件被 keep-alive 组件包裹，则使组件失活，从而缓存组件的状态
    *  2. 如果组件没有被 keep-alive 包裹，则直接调用实例的 $destroy 方法销毁组件
-   * @param {*} vnode 
    */
   destroy (vnode: MountedComponentVNode) {
+    // 从 vnode.componentInstance 上获取组件实例
     const { componentInstance } = vnode
+    // 如果组件实例没有被标记销毁
     if (!componentInstance._isDestroyed) {
       if (!vnode.data.keepAlive) {
+        // 组件没有被 keep-alive 组件包裹，则直接调用 $destroy 方法销毁组件
         componentInstance.$destroy()
       } else {
+        // 如果被 keep-alive 包裹，则不销毁组件实例，让组件失活，从而缓存组件的状态
         deactivateChildComponent(componentInstance, true /* direct */)
       }
     }
@@ -232,12 +246,23 @@ export function createComponentInstanceForVnode (
   return new vnode.componentOptions.Ctor(options)
 }
 
+/**
+ * 在组件的 data 对象上设置 hook 对象 data.hook
+ * hook 对象增加四个属性，init、prepatch、insert、destroy
+ * 分别负责组件的创建、更新、销毁
+ */
 function installComponentHooks (data: VNodeData) {
+  // 在 data 上创建 hook 对象
   const hooks = data.hook || (data.hook = {})
+  // 遍历 hooksToMerge 数组，hooksToMerge = ['init', 'prepatch', 'insert' 'destroy']
   for (let i = 0; i < hooksToMerge.length; i++) {
+    // 获取数组中的每个字符串当作 key
     const key = hooksToMerge[i]
+    // 从 data.hook 对象中获取 key 对象的方法
     const existing = hooks[key]
+    // componentVNodeHooks 对象中 key 对象的方法
     const toMerge = componentVNodeHooks[key]
+    // 合并用户传递的 hook 方法和框架自带的 hook 方法
     if (existing !== toMerge && !(existing && existing._merged)) {
       hooks[key] = existing ? mergeHook(toMerge, existing) : toMerge
     }
