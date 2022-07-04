@@ -12,13 +12,13 @@ const callbacks = []
 // 异步锁
 let pending = false
 
-/* 
-  1. 将 pending = false，表示下一个 flushCallbacks 函数可以进入异步队列了
-  2. 浅拷贝 callbacks 数组
-  3. 执行浅拷贝数组中的所有函数
-      flushSchedulerQueue
-      用户自己调用 this.$nextTick 传递的回调函数
-  4. 清空 callbacks 数组
+/**
+ *  1. 将 pending = false，表示下一个 flushCallbacks 函数可以进入异步队列了
+    2. 浅拷贝 callbacks 数组
+    3. 执行浅拷贝数组中的所有函数
+        flushSchedulerQueue
+        用户自己调用 this.$nextTick 传递的回调函数
+    4. 清空 callbacks 数组
  */
 function flushCallbacks () {
   pending = false

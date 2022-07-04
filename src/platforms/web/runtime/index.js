@@ -39,7 +39,10 @@ Vue.prototype.$mount = function (
   el?: string | Element,
   hydrating?: boolean
 ): Component {
+  // 先获取 el 元素
   el = el && inBrowser ? query(el) : undefined
+  // 调用 mountComponent 函数将 el 选项对应的 DOM 元素传入
+  // 并进入挂载阶段
   return mountComponent(this, el, hydrating)
 }
 

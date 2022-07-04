@@ -129,6 +129,7 @@ function flushSchedulerQueue () {
   const activatedQueue = activatedChildren.slice()
   const updatedQueue = queue.slice()
 
+  // 这里边将 waiting 置为 false
   resetSchedulerState()
 
   // call component updated and activated hooks
@@ -199,7 +200,8 @@ export function queueWatcher (watcher: Watcher) {
     }
     // queue the flush
     if (!waiting) {
-      // waiting = false 走这里，表示当前浏览器的异步任务队列中没有在 flushSchedulerQueue
+      // waiting = false 走这里
+      // waiting 能保证当前浏览器的异步任务队列中至多只有一个 flushSchedulerQueue
       waiting = true
 
       if (process.env.NODE_ENV !== 'production' && !config.async) {

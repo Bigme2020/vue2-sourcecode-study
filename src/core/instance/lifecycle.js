@@ -158,6 +158,8 @@ export function mountComponent (
 ): Component {
   vm.$el = el
   if (!vm.$options.render) {
+    // 如果没有 render 函数
+    // 创建一个注释类型的 VNode 节点
     vm.$options.render = createEmptyVNode
     if (process.env.NODE_ENV !== 'production') {
       /* istanbul ignore if */
@@ -177,6 +179,7 @@ export function mountComponent (
       }
     }
   }
+  // 触发 beforeMount 钩子函数
   callHook(vm, 'beforeMount')
 
   let updateComponent

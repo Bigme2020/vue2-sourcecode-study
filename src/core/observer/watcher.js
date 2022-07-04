@@ -97,6 +97,7 @@ export default class Watcher {
     }
     this.value = this.lazy
       ? undefined
+      // 在构造函数中，调用 this.get()，computed 默认不会调用
       : this.get()
   }
 
@@ -105,7 +106,7 @@ export default class Watcher {
    * 触发 updateComponent 的执行，进行组件更新，进入 patch 阶段
    * 更新组件时先执行 render 生成 VNode，期间触发读取操作，进行依赖收集
    */
-  // get 会在 run 中和 evaluate 调用
+  // get 会在 run、evaluate 和 实例化 watcher 时调用
   get () {
     // Dep.target = this 对新值做依赖收集
     pushTarget(this)
