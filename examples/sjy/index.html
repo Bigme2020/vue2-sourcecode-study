@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>靠打断点找Vue构造函数</title>
 </head>
+
 <body>
   <div id="app">
     {{hello1}}
@@ -40,12 +42,17 @@
         }, 4000)
       }
     })
-    // debugger
+    debugger
     const vm = new Vue({
       el: '#app',
       data: {
         hello: 'hello Vue'
       },
+      // data() {
+      //   return {
+      //     helllo2: 'hello Vue2'
+      //   }
+      // },
       methods: {
         test() {
           console.log('customClick');
@@ -58,21 +65,27 @@
         }
       },
       computed: {
-        hello1: function(){
+        hello1: function () {
           return this.hello + '1'
-        } 
+        }
       },
       watch: {
         hello(newValue) {
           console.log(newValue);
         }
-      }
-      // component: {
-      //   localComp, // 这是根组件自己的局部配置的组件
-      //   globalComp // 这是合并过来的全局配置的组件
-      // }
+      },
+      // 通过源码发现了新的生命周期钩子写法
+      'beforeCreate': [
+        () => {
+          console.log('beforeCreate1');
+        },
+        () => {
+          console.log('beforeCreate2');
+        }
+      ]
     })
     // .$mount('#app') // 没有 el 的话需要手动 mount
   </script>
 </body>
+
 </html>
