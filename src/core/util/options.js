@@ -74,7 +74,7 @@ function mergeData (to: Object, from: ?Object): Object {
 }
 
 /**
- * Data
+ * Data: strats[data]() = mergeDataOrFn
  */
 export function mergeDataOrFn (
   parentVal: any,
@@ -118,6 +118,7 @@ export function mergeDataOrFn (
   }
 }
 
+// 为 data 定义用户覆盖策略
 strats.data = function (
   parentVal: any,
   childVal: any,
@@ -141,7 +142,7 @@ strats.data = function (
 }
 
 /**
- * Hooks and props are merged as arrays.
+ * Hooks and props are merged as arrays. 钩子可以是数组形式传递
  */
 function mergeHook (
   parentVal: ?Array<Function>,
@@ -159,6 +160,9 @@ function mergeHook (
     : res
 }
 
+/**
+ * 去重
+ */
 function dedupeHooks (hooks) {
   const res = []
   for (let i = 0; i < hooks.length; i++) {
@@ -169,12 +173,13 @@ function dedupeHooks (hooks) {
   return res
 }
 
+// 为生命周期钩子定义用户覆盖策略
 LIFECYCLE_HOOKS.forEach(hook => {
   strats[hook] = mergeHook
 })
 
 /**
- * Assets
+ * Assets 
  *
  * When a vm is present (instance creation), we need to do
  * a three-way merge between constructor options, instance
@@ -186,15 +191,16 @@ function mergeAssets (
   vm?: Component,
   key: string
 ): Object {
-  const res = Object.create(parentVal || null)
+  const res = Object.create(parentVal || null) // res 继承初始 options.components 
   if (childVal) {
     process.env.NODE_ENV !== 'production' && assertObjectType(key, childVal, vm)
-    return extend(res, childVal)
+    return extend(res, childVal) // extend(to,from) from 的属性会覆盖 to 属性，最终返回合并后的对象
   } else {
-    return res
+    return res // 若用户没有定义 components 则返回继承了初始 components 的空对象
   }
 }
 
+// 为 component directive filter 定义用户覆盖策略
 ASSET_TYPES.forEach(function (type) {
   strats[type + 's'] = mergeAssets
 })
@@ -205,6 +211,7 @@ ASSET_TYPES.forEach(function (type) {
  * Watchers hashes should not overwrite one
  * another, so we merge them as arrays.
  */
+// 为 watch 定义用户覆盖策略
 strats.watch = function (
   parentVal: ?Object,
   childVal: ?Object,
@@ -292,8 +299,7 @@ export function validateComponentName (name: string) {
 }
 
 /**
- * Ensure all props option syntax are normalized into the
- * Object-based format.
+ * 对用户传入的 options 中的props做标准化处理，便于后续处理
  */
 function normalizeProps (options: Object, vm: ?Component) {
   const props = options.props
@@ -330,7 +336,7 @@ function normalizeProps (options: Object, vm: ?Component) {
 }
 
 /**
- * Normalize all injections into Object-based format
+ * 对用户传入的 options 中的 inject 做标准化处理，便于后续处理
  */
 function normalizeInject (options: Object, vm: ?Component) {
   const inject = options.inject
@@ -357,7 +363,7 @@ function normalizeInject (options: Object, vm: ?Component) {
 }
 
 /**
- * Normalize raw function directives into object format.
+ * 对用户传入的 options 中的 directives 做标准化处理，便于后续处理
  */
 function normalizeDirectives (options: Object) {
   const dirs = options.directives
@@ -426,11 +432,25 @@ export function mergeOptions (
   // 最后 return 的结果
   const options = {}
   let key
-  // 遍历父选项
+  // 遍历父选项，并把 key-value 
   for (key in parent) {
     mergeField(key)
   }
-  // 李永宁解读：child 的选项会覆盖 parent 的选项
+  // 用户的 options 选项会与 parent options 进行合并
+  /* parent options = {
+    componennts: {
+      KeepAlive,
+      Transition,
+      TransitionGroup,
+      comp
+    },
+    directives: {
+      model,
+      show
+    },
+    filters: {},
+    _base
+  } */ 
   for (key in child) {
     if (!hasOwn(parent, key)) {
       mergeField(key)
@@ -438,9 +458,18 @@ export function mergeOptions (
   }
   function mergeField (key) {
     // strats = Object.create(null)
+    // defaultStrat 是一个函数 传入两个参数 parentVal childVal，若childVal有就用childVal 不过这里 defaultStrat 不重要，因为都是走 strats[key]
+    // strats 在前面有定义并赋值过，具体行数：
+    //   29: 定义
+    //   122: data策略 最后返回到 options 上的是函数 mergedInstanceDataFn 这里用到了闭包
+    //   174: 生命周期钩子策略 钩子可以是数组形式传递，最后返回到 options 上的是数组
+    //   201: components directives filters 将用户输入的对象配置去继承父类，最后返回到 options 上的是此对象配置
+    //   212: watch 合并，里面对火狐浏览器做了一些处理
+    //   245: props methods inject computed 合并，子会覆盖父
+    // 每个 strats[key] 都是一个用来处理对应的 key 比方说 component methods 的函数
     const strat = strats[key] || defaultStrat
     // 如果 childVal 存在则优先使用 childVal，否则使用 parentVal
-    options[key] = strat(parent[key], child[key], vm, key)
+    options[key] = strat(parent[key], child[key], vm, key) // 从这里可以得知，一旦有相同的再次出现，后一次的配置会覆盖前一次的
   }
   return options
 }

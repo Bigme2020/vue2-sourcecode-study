@@ -49,8 +49,8 @@ export function initMixin (Vue: Class<Component>) {
           3. 第三步就是以下的根组件情况了
        */
       vm.$options = mergeOptions(
-        resolveConstructorOptions(vm.constructor),
-        options || {},
+        resolveConstructorOptions(vm.constructor), // parent: Vue构造函数本身的 options
+        options || {}, // child: 外部传入的 options
         vm
       )
     }
@@ -65,7 +65,8 @@ export function initMixin (Vue: Class<Component>) {
     vm._self = vm
 
 
-    // 重要，整个初始化最重要的部分，也是核心
+    // 下面的很重要，整个初始化最重要的部分，也是核心
+
     // 组件关系属性的初始化，比如：$parent $root $children $refs
     initLifecycle(vm)
     // 初始化自定义事件

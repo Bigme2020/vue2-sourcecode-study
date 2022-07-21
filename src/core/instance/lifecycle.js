@@ -29,6 +29,9 @@ export function setActiveInstance(vm: Component) {
   }
 }
 
+/**
+ * 定义 $parent $root $children $refs 以及其他内部属性
+ */
 export function initLifecycle (vm: Component) {
   const options = vm.$options
 

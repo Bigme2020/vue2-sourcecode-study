@@ -11,6 +11,15 @@ import {
   isPlainObject
 } from 'shared/util'
 
+// function cached<F: Function> (fn: F): F {
+//   const cache = Object.create(null)
+//   return (function cachedFn (str: string) {
+//     const hit = cache[str]
+//     return hit || (cache[str] = fn(str))
+//   }: any)
+// }
+// 可以看出，这里的 cached 函数又是一个闭包，在这明确指出是用来做缓存的，这边给 normalizeEvent 做了一个缓存 cache 用来存放 fn(str) 的结果也就是标准化后的 event 对象
+// 之后每调用一次若 cache 上不存在 cache[str] 都会在 cache 上写入一个 key-value
 const normalizeEvent = cached((name: string): {
   name: string,
   once: boolean,
@@ -19,12 +28,13 @@ const normalizeEvent = cached((name: string): {
   handler?: Function,
   params?: Array<any>
 } => {
-  const passive = name.charAt(0) === '&'
+  const passive = name.charAt(0) === '&'      
   name = passive ? name.slice(1) : name
   const once = name.charAt(0) === '~' // Prefixed last, checked first
   name = once ? name.slice(1) : name
   const capture = name.charAt(0) === '!'
   name = capture ? name.slice(1) : name
+  // 标准化后的 event 对象
   return {
     name,
     once,
@@ -50,6 +60,16 @@ export function createFnInvoker (fns: Function | Array<Function>, vm: ?Component
   return invoker
 }
 
+/**
+ * 拿到父组件中在子组件上定义的事件与触发函数，并给到子组件来进行监听
+ * 也就是说 $on $off $emit 这一系列操作都是子组件在进行，和父组件没有关系，父组件只是在外提供事件与触发函数
+ * @param {*} on listeners 
+ * @param {*} oldOn 
+ * @param {*} add target.$on
+ * @param {*} remove target.$off
+ * @param {*} createOnceHandler 就是 target.$once
+ * @param {*} vm 实例
+ */
 export function updateListeners (
   on: Object,
   oldOn: Object,
@@ -58,6 +78,16 @@ export function updateListeners (
   createOnceHandler: Function,
   vm: Component
 ) {
+  /* 
+    name = 'custom-click'
+    def,cur 就是定义的函数
+    event = {
+      capture: false
+      name: "custom-click"
+      once: false
+      passive: false
+    }
+   */
   let name, def, cur, old, event
   for (name in on) {
     def = cur = on[name]
