@@ -29,7 +29,7 @@ export default class Dep {
   }
 
   depend () {
-    // 向 watcher 实例中添加 dep 实例
+    // 向 watcher 实例中添加 dep 实例，并且 watcher.addDep 后续还会触发传入的 dep.addSub
     console.log('dep.depend', Dep.target);
     if (Dep.target) {
       Dep.target.addDep(this)

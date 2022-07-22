@@ -25,6 +25,8 @@ export function initInjections (vm: Component) {
     toggleObserving(false)
     Object.keys(result).forEach(key => {
       /* istanbul ignore else */
+      console.log('inject');
+      // 做响应式处理，将每个 result 的值代理到 vue 实例上
       if (process.env.NODE_ENV !== 'production') {
         defineReactive(vm, key, result[key], () => {
           warn(
@@ -35,7 +37,6 @@ export function initInjections (vm: Component) {
           )
         })
       } else {
-        // 做响应式处理，将每个 result 的值代理到 vue 实例上
         defineReactive(vm, key, result[key])
       }
     })
@@ -65,7 +66,7 @@ export function resolveInject (inject: any, vm: Component): ?Object {
       // 获取 from 属性（注意这里已经在 mergeOptions 中进行过标准化处理了）
       const provideKey = inject[key].from
       let source = vm
-      // 从祖代组件的配置项中找到 provide 选项，从而找到对应 key 的值
+      // 从祖代组件的配置项中找到 provide 选项，从而找到对应 key 的值,并将值赋值给 result
       while (source) {
         if (source._provided && hasOwn(source._provided, provideKey)) {
           result[key] = source._provided[provideKey]

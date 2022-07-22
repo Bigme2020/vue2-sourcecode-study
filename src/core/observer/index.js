@@ -159,6 +159,7 @@ export function defineReactive (
 ) {
   // 实例化一个 dep,一个 key 对应一个 dep
   const dep = new Dep()
+  console.log('injectionReactive', Dep.target);
 
   // 获取属性描述符,若 configurable 为 false 则不进行响应式处理
   const property = Object.getOwnPropertyDescriptor(obj, key)

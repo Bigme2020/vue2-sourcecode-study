@@ -84,12 +84,10 @@ export function initState (vm: Component) {
 // 初始化 props
 // 这里的 propsOptions 已经被标准化了
 function initProps (vm: Component, propsOptions: Object) {
-  // propsData：父组件传入的真实 props 数据
+  // propsData：父组件传入的真实 props 数据（这里简单解释一下：父组件需要在 template 中给子组件标签传递的 props 是 propsData；子组件内部配置的 props 是 propsOptions）
   const propsData = vm.$options.propsData || {}
-  // _props：所有设置到 props 变量中的属性都会保存到 vm._props 中
+  // _props：指向 vm._props 的指针，所有设置到 props 变量中的属性都会保存到 vm._props 中
   const props = vm._props = {}
-  // cache prop keys so that future props updates can iterate using Array
-  // instead of dynamic object key enumeration.
   // _propKeys：缓存 props 对象中的 key，将来更新 props 时只需要遍历 vm.$options._propKeys 即可得到所有 key
   const keys = vm.$options._propKeys = []
   // 判断当前组件是否为根组件
@@ -100,7 +98,7 @@ function initProps (vm: Component, propsOptions: Object) {
   }
   for (const key in propsOptions) {
     keys.push(key)
-    // 校验父组件传入的 props 数据类型是否匹配并获取到传入的值 value
+    // 校验父组件传入的 props 数据类型是否匹配 并获取到父组件传入的值
     const value = validateProp(key, propsOptions, propsData, vm)
     /* istanbul ignore else */
     if (process.env.NODE_ENV !== 'production') {
@@ -112,6 +110,8 @@ function initProps (vm: Component, propsOptions: Object) {
           vm
         )
       }
+      // 添加到 vm._props
+      // 开发模式下会有 prop 禁止修改提示
       defineReactive(props, key, value, () => {
         if (!isRoot && !isUpdatingChildComponent) {
           warn(
@@ -124,7 +124,7 @@ function initProps (vm: Component, propsOptions: Object) {
         }
       })
     } else {
-      // 添加到 vm._props 上并对数据做响应式处理
+      // 添加到 vm._props
       defineReactive(props, key, value)
     }
     // static props are already proxied on the component's prototype

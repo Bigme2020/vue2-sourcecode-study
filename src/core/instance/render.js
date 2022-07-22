@@ -23,8 +23,11 @@ export function initRender (vm: Component) {
   const parentVnode = vm.$vnode = options._parentVnode // the placeholder node in parent tree
   const renderContext = parentVnode && parentVnode.context
   // 插槽的处理
+  // console.log('_renderChildren', options._renderChildren, 'renderContext', renderContext);
   vm.$slots = resolveSlots(options._renderChildren, renderContext)
+  // console.log('vm.$slots', vm.$slots);
   vm.$scopedSlots = emptyObject
+  // console.log('vm.$scopedSlots',vm.$scopedSlots)
   // bind the createElement fn to this instance
   // so that we get proper render context inside it.
   // args order: tag, data, children, normalizationType, alwaysNormalize

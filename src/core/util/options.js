@@ -300,6 +300,11 @@ export function validateComponentName (name: string) {
 
 /**
  * 对用户传入的 options 中的props做标准化处理，便于后续处理
+ * props: {
+    name:{
+        type: xxx
+    }
+  }
  */
 function normalizeProps (options: Object, vm: ?Component) {
   const props = options.props

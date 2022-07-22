@@ -15,6 +15,7 @@ export function resolveSlots (
   const slots = {}
   for (let i = 0, l = children.length; i < l; i++) {
     const child = children[i]
+    // console.log('resolveSlots:child', child);
     const data = child.data
     // remove slot attribute if the node is resolved as a Vue slot node
     if (data && data.attrs && data.attrs.slot) {
@@ -37,6 +38,7 @@ export function resolveSlots (
     }
   }
   // ignore slots that contains only whitespace
+  // 如果 slots 中有传入文本的且文本是空字符串那么直接忽略（删除）
   for (const name in slots) {
     if (slots[name].every(isWhitespace)) {
       delete slots[name]
