@@ -24,8 +24,8 @@ const methodsToPatch = [
 
 /**
  * Intercept mutating methods and emit events
+ * 覆写（增强）数组原型方法，使其具有通知依赖更新的能力
  */
-// 覆写（增强）数组原型方法，使其具有通知依赖更新的能力
 methodsToPatch.forEach(function (method) {
   // cache original method
   // 获取 Array.prototype 上对应 method 的方法

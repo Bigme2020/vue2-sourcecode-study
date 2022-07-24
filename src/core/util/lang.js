@@ -27,10 +27,14 @@ export function def (obj: Object, key: string, val: any, enumerable?: boolean) {
   })
 }
 
+const bailRE = new RegExp(`[^${unicodeRegExp.source}.$_\\d]`)
 /**
  * Parse simple path.
+ * 把一个形如'data.a.b.c'的字符串路径所表示的值，从真实的data对象中取出来
+ * 例如：
+ * data = {a:{b:{c:2}}}
+ * parsePath('a.b.c')(data)  // 2
  */
-const bailRE = new RegExp(`[^${unicodeRegExp.source}.$_\\d]`)
 export function parsePath (path: string): any {
   if (bailRE.test(path)) {
     return

@@ -47,7 +47,11 @@ export function proxy (target: Object, sourceKey: string, key: string) {
   Object.defineProperty(target, key, sharedPropertyDefinition)
 }
 
-// 数据处理，响应式原理的入口
+/**
+ * 数据处理，响应式原理的入口
+ * props > methods > data > computed > watch
+ * @param {*} vm 
+ */
 export function initState (vm: Component) {
   vm._watchers = []
   const opts = vm.$options
@@ -67,8 +71,8 @@ export function initState (vm: Component) {
     observe(vm._data = {}, true /* asRootData */)
   }
   // 初始化 computed
-  // computed 是通过 watcher 来实现的，对每个 computedKey 实例化一个默认懒执行的 watcher
-  // 代理，支持 this.xxx 访问
+  // computed 是通过 watcher 来实现的，对每个 computedKey 实例化一个默认懒执行的 computed watcher
+  // 也经过了代理，支持 this.xxx 访问
   if (opts.computed) initComputed(vm, opts.computed)
   if (opts.watch && opts.watch !== nativeWatch) {
     // 初始化 watcher
@@ -138,6 +142,12 @@ function initProps (vm: Component, propsOptions: Object) {
   toggleObserving(true)
 }
 
+/**
+ * 如果 不是工厂函数返回对象的形式 则进行报错警告
+ * 然后保证不与 props methods 重名
+ * 代理到实例上，支持 this.xxx 访问
+ * 最后给 data 做响应式处理
+ */
 function initData (vm: Component) {
   let data = vm.$options.data
   // 保证后续处理的 data 是一个对象
@@ -202,7 +212,7 @@ const computedWatcherOptions = { lazy: true }
 
 function initComputed (vm: Component, computed: Object) {
   // $flow-disable-line
-  const watchers = vm._computedWatchers = Object.create(null)
+  const watchers = vm._computedWatchers = Object.create(null) // {}
   // computed properties are just getters during SSR
   const isSSR = isServerRendering()
 
@@ -258,6 +268,7 @@ export function defineComputed (
   const shouldCache = !isServerRendering()
   if (typeof userDef === 'function') {
     sharedPropertyDefinition.get = shouldCache
+      // 主要看 createComputedGetter这个函数
       ? createComputedGetter(key)
       : createGetterInvoker(userDef)
     sharedPropertyDefinition.set = noop
@@ -282,16 +293,21 @@ export function defineComputed (
   Object.defineProperty(target, key, sharedPropertyDefinition)
 }
 
+/**
+ * 返回一个 computedGetter 函数用于设置 computed 的 getter
+ * 当 computed 被读取时，就会触发这个 computedGetter 函数
+ */
 function createComputedGetter (key) {
   return function computedGetter () {
     // 拿到 key 对应的 watcher
     const watcher = this._computedWatchers && this._computedWatchers[key]
     if (watcher) {
       // 在计算属性的 watcher 刚创建时，watcher.dirty = watcher.lazy = true
+      // 所以会先走 evaluate
       if (watcher.dirty) {
         // evaluate 执行完后，watcher.dirty = false
         // 置为 false 可以避免在页面下次更新前 可能发生的多次重复计算
-        // 在下次页面更新后，watcher.update 会将 watcher.dirty 置为 true  
+        // 下次当前依赖的数据更改 使 页面更新前后，watcher.update 会将 watcher.dirty 置为 true  
         watcher.evaluate()
       }
       // 此时的 Dep.target 不是 computed watcher
@@ -314,6 +330,9 @@ function createGetterInvoker(fn) {
   }
 }
 
+/**
+ * 判断有没有与 props 或 Vue 内置方法重名，没有的话就定义到 vm 实例上，并进行了代理，支持了 this.xxx 访问 
+ */
 function initMethods (vm: Component, methods: Object) {
   const props = vm.$options.props
   // 判重，methods 中的 key 不能和 props 中的重复
@@ -376,6 +395,7 @@ function createWatcher (
     handler = vm[handler]
   }
   // $watch：实例方法
+  // key, handler, null
   return vm.$watch(expOrFn, handler, options)
 }
 
@@ -414,7 +434,18 @@ export function stateMixin (Vue: Class<Component>) {
   Vue.prototype.$watch = function (
     expOrFn: string | Function, // key
     cb: any, // 回调函数
-    options?: Object // 选项
+    /* 
+    当 initWatch 的时候，只有这样定义，才会把 options 传进来 watch: {
+      aValue: {
+        handler(newValue, oldValue) {
+          ....
+        },
+        immediate: true,
+        deep: true
+      }
+    }
+     */
+    options?: Object // 选项 
   ): Function {
     const vm: Component = this
     // 如果从 initWatch 看下来会疑惑，之前已经对 cb 处理过了，为什么这里还要处理呢
@@ -424,7 +455,7 @@ export function stateMixin (Vue: Class<Component>) {
       return createWatcher(vm, expOrFn, cb, options)
     }
     options = options || {}
-    // 标记这是一个用户 watcher
+    // 标记这是一个用户定义的 watcher（即 options.watch）
     options.user = true
     // 实例化 watcher
     const watcher = new Watcher(vm, expOrFn, cb, options)

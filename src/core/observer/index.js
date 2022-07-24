@@ -41,7 +41,7 @@ export class Observer {
 
   constructor (value: any) {
     this.value = value
-    // Observer 实例的 dep 是给对象或数组用的
+    // Observer 实例的 dep 是给整个对象或数组用的
     // defineReactive中的 dep 是给对象中每个 key 用的
     this.dep = new Dep()
     this.vmCount = 0
@@ -122,6 +122,7 @@ function copyAugment (target: Object, src: Object, keys: Array<string>) {
  * returns the new observer if successfully observed,
  * or the existing observer if the value already has one.
  * 响应式处理的入口
+ * 尝试为某些数据做响应式操作，若数据已经有 __ob__ 标记了则说明做过响应式直接返回 __ob__，若没有则做响应式并返回
  */
 export function observe (value: any, asRootData: ?boolean): Observer | void {
   if (!isObject(value) || value instanceof VNode) {
@@ -149,6 +150,7 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
 
 /**
  * Define a reactive property on an Object.
+ * 为对象做响应式处理（通过递归的方式处理整个对象 与 嵌套对象）
  */
 export function defineReactive (
   obj: Object,
@@ -168,8 +170,11 @@ export function defineReactive (
   }
 
   // cater for pre-defined getter/setters
+  // 获取当前 obj[key] 的 getter 和 setter（如果有的话），这里如果不是提前定义过，那么一般都是 undefined
   const getter = property && property.get
   const setter = property && property.set
+  // 当没有getter 或 有getter有setter 的时候，若只传进来了两个参数，则 val = obj[key]
+  // 从 observe 的 walk 走到这的话就会走这里一步，因为 walk 中遍历时只传了两个参数
   if ((!getter || setter) && arguments.length === 2) {
     val = obj[key]
   }
@@ -183,7 +188,8 @@ export function defineReactive (
     get: function reactiveGetter () {
       const value = getter ? getter.call(obj) : val
       if (Dep.target) {
-        // 读取时进行双向依赖收集,将 dep 添加到 watcher,将 watcher 添加到 dep 中
+        // 读取时若有 Dep.target 进行双向依赖收集,将 dep 添加到 Dep.target 对应的 watcher,并将 watcher 添加到 dep 中
+        // 一般都会被 render watcher 给收集到
         dep.depend()
         if (childOb) {
           // 对这个对象进行双向依赖收集
@@ -209,7 +215,7 @@ export function defineReactive (
         customSetter()
       }
       // #7981: for accessor properties without setter
-      // 有 getter 没有 setter 说明只是只读属性，不做处理
+      // 有 getter 没有 setter 说明只是只读属性，不做处理,一般情况下我们普通定义的数据都是没有 getter 没有 setter 的
       if (getter && !setter) return
       // 新值替换老值
       if (setter) {

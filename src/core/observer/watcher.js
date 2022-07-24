@@ -4,7 +4,7 @@ import {
   warn,
   remove,
   isObject,
-  parsePath,
+  parsePath, // parsePath 用到了闭包
   _Set as Set,
   handleError,
   invokeWithErrorHandling,
@@ -81,6 +81,7 @@ export default class Watcher {
     //   1. 实例化渲染 watcher 的 updateComponent 函数
     //   2. 用户 watcher 的 key 最终被 parsePath 转换成一个读取 this.key 的函数
     if (typeof expOrFn === 'function') {
+      // computed watcher 的 getter 会走这里
       this.getter = expOrFn
     } else {
       // watch 中会走这里通过 parsePath 返回一个函数给到 getter
@@ -96,6 +97,7 @@ export default class Watcher {
       }
     }
     this.value = this.lazy
+    // 为 computed 创建 computed watcher 时 this.value = undefined
       ? undefined
       // 在构造函数中，调用 this.get()，computed 默认不会调用
       : this.get()
@@ -189,7 +191,7 @@ export default class Watcher {
    * Subscriber interface.
    * Will be called when a dependency changes.
    */
-  // 当页面更新后，会调用这个方法
+  // 当页面更新后，dep会进行通知，会走到这调用 watcher.update
   update () {
     /* istanbul ignore else */
     if (this.lazy) {
@@ -247,9 +249,10 @@ export default class Watcher {
    */
   /* 懒执行的 watcher 会调用此方法，比如 computed
       this.get() 会调用传入的 expOrFn，目的是获取一下值
+      （为什么会获取值？因为我们既然用了 computed，那么里面写的逻辑就一定会获取到某个值，然后就会在这里被 get 调用）
       使这个响应式的值添加当前 watcher 到 dep 依赖中
       然后置 dirty 为 false，目的是当页面用到了多个一样的计算属性中，
-      那么本次渲染时，只有第一个计算属性会去调用 get
+      那么在下次当前依赖的数据更改 使 页面更新前，只有第一个计算属性会去计算，后面重复使用的计算属性都是用的缓存
    */ 
 
   evaluate () {
