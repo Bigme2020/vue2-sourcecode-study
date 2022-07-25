@@ -44,6 +44,7 @@ export class Observer {
     // Observer 实例的 dep 是给整个对象或数组用的
     // defineReactive中的 dep 是给对象中每个 key 用的
     this.dep = new Dep()
+    console.log(`ObserverDep${this.dep.id}`, value);
     this.vmCount = 0
     // __ob__标记已进行过响应式的同时
     // 附上 this 方便后续对实例属性和方法的调用
@@ -190,6 +191,7 @@ export function defineReactive (
       if (Dep.target) {
         // 读取时若有 Dep.target 进行双向依赖收集,将 dep 添加到 Dep.target 对应的 watcher,并将 watcher 添加到 dep 中
         // 一般都会被 render watcher 给收集到
+        console.log(`whereis Dep${dep.id}?`, obj, key);
         dep.depend()
         if (childOb) {
           // 对这个对象进行双向依赖收集

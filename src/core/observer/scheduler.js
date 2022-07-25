@@ -25,7 +25,7 @@ let index = 0
 /**
  * Reset the scheduler's state.
  */
-function resetSchedulerState () {
+function resetSchedulerState() {
   index = queue.length = activatedChildren.length = 0
   has = {}
   if (process.env.NODE_ENV !== 'production') {
@@ -68,7 +68,7 @@ if (inBrowser && !isIE) {
 /**
  * Flush both queues and run the watchers.
  */
-function flushSchedulerQueue () {
+function flushSchedulerQueue() {
   currentFlushTimestamp = getNow()
   // flushing 置为 true，表示现在的 watcher 队列正在被刷新
   flushing = true
@@ -129,12 +129,12 @@ function flushSchedulerQueue () {
   const activatedQueue = activatedChildren.slice()
   const updatedQueue = queue.slice()
 
-  // 这里边将 waiting 置为 false
+  // 这里边将 waiting 和 flushing 置为 false
   resetSchedulerState()
 
   // call component updated and activated hooks
   callActivatedHooks(activatedQueue)
-  callUpdatedHooks(updatedQueue)
+  callUpdatedHooks(updatedQueue) // updated
 
   // devtool hook
   /* istanbul ignore if */
@@ -143,13 +143,16 @@ function flushSchedulerQueue () {
   }
 }
 
-function callUpdatedHooks (queue) {
+/**
+ * 调用 updated 钩子函数
+ */
+function callUpdatedHooks(queue) {
   let i = queue.length
   while (i--) {
     const watcher = queue[i]
     const vm = watcher.vm
     if (vm._watcher === watcher && vm._isMounted && !vm._isDestroyed) {
-      callHook(vm, 'updated')
+      callHook(vm, 'updated') // 调用 updated 钩子函数
     }
   }
 }
@@ -158,14 +161,14 @@ function callUpdatedHooks (queue) {
  * Queue a kept-alive component that was activated during patch.
  * The queue will be processed after the entire tree has been patched.
  */
-export function queueActivatedComponent (vm: Component) {
+export function queueActivatedComponent(vm: Component) {
   // setting _inactive to false here so that a render function can
   // rely on checking whether it's in an inactive tree (e.g. router-view)
   vm._inactive = false
   activatedChildren.push(vm)
 }
 
-function callActivatedHooks (queue) {
+function callActivatedHooks(queue) {
   for (let i = 0; i < queue.length; i++) {
     queue[i]._inactive = true
     activateChildComponent(queue[i], true /* true */)
@@ -177,7 +180,17 @@ function callActivatedHooks (queue) {
  * Jobs with duplicate IDs will be skipped unless it's
  * pushed when the queue is being flushed.
  */
-export function queueWatcher (watcher: Watcher) {
+/**
+ * 1.先把 watcher 推入到 queue 中（若不在 flushing，直接推入；若正在 flushing，从小到大顺序推入）
+ * 2.在一般简单场景比如有个 watch 监听，那么值被改变的话 queue 就会连续推入两个
+ *   但推入第一个后，会执行到下面的 nextTick(flushSchedulerQueue)
+ *   重点来了：这里的 nextTick(flushSchedulerQueue) 它并不会立即执行，因为它是异步微任务！
+ *           只有在当前的同步代码都执行完后才会去执行 flushSchedulerQueue
+ *           当前的同步代码就是值被改变后触发了 dep.notify => 每个 watcher.update => 每个都 queueWatcher
+ *           从第二个 queueWatcher 开始后就不会再走 nextTick(flushSchedulerQueue) 了，因为已经有了，不允许有第二个
+ *           所以到最后执行到 flushSchedulerQueue 的时候，所有监听值变化的 watcher 都在 queue 中等待被 flushSchedulerQueue
+ */
+export function queueWatcher(watcher: Watcher) {
   const id = watcher.id
   // 判重，watcher 不会重复入队
   // 在一个组件的渲染周期内，若一个响应式数据被多次更新，watcher 不会重复入队
@@ -187,8 +200,10 @@ export function queueWatcher (watcher: Watcher) {
     if (!flushing) {
       // 如果 flushing = false，表示当前 watcher 队列没有在被刷新，watcher 直接入队
       // 定义 computed 后最终会引导 render watcher 走到这里
+      console.log('queue.push');
       queue.push(watcher)
     } else {
+      console.log('queue.splice');
       // if already flushing, splice the watcher based on its id
       // if already past its id, it will be run next immediately.
       // 在刷新中,根据 watcher id 由小到大进行有序排列，保证 watcher 入队后，刷新中的 watcher 队列仍然时有序的
@@ -217,7 +232,13 @@ export function queueWatcher (watcher: Watcher) {
        *    2. 通过 pending 异步所控制 向浏览器任务队列中添加 flushCallbacks 函数
        */
       console.log('queueWatcher');
-      nextTick(flushSchedulerQueue)
+      nextTick(flushSchedulerQueue) // 微任务，等待当前事件循环下的所有同步代码都执行完后再执行
+    }
+    else {
+      console.log('waiting = true', 'watcher = ', watcher);
+      for (let i = 0; i< queue.length;i++) {
+        console.log('queue = ', queue[i]);
+      }
     }
   }
 }

@@ -112,6 +112,7 @@ export default class Watcher {
   get () {
     // Dep.target = this 对新值做依赖收集
     pushTarget(this)
+    // console.log('watcher.get', this);
     // console.log(Dep.target);
     let value
     const vm = this.vm

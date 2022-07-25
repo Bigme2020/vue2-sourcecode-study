@@ -11,7 +11,7 @@
 <body>
   <div id="app">
     {{hello1}}
-    <comp @custom-click="test" @hook:created="handleHookMounted">1<template #slotTest>234</template></comp>
+    <!-- <comp @custom-click="test" @hook:created="handleHookMounted">1<template #slotTest>234</template></comp> -->
     <button @click="handleClick">123</button>
   </div>
 
@@ -54,9 +54,11 @@
     debugger
     const vm = new Vue({
       el: '#app',
-      data: {
-        hello: 'hello Vue',
-        message: 'root'
+      data() {
+        return {
+          hello: 'hello Vue',
+          message: 'root'
+        }
       },
       // data() {
       //   return {
@@ -83,6 +85,8 @@
         }
       },
       watch: {
+        // 这边有个比较重要的点，就是只要定义了 watch（不管内部是否有写逻辑）
+        // 不仅初始化的时候会读取一次，而且监听的值改变后，watch 内部会再次读取值（不管内部是否有写逻辑）
         hello(newValue) {
           console.log(newValue);
         }
