@@ -207,7 +207,10 @@ export function parse (
     }
   }
 
-  // 解析 HTML 模板字符串，处理所有标签以及标签上的属性
+  /**
+   * 解析 HTML 模板字符串，处理所有标签以及标签上的属性
+   * 并通过 start chars comment 将 parseHTML 中提取出来的内容生成对应的 AST
+   */
   parseHTML(template, {
     warn,
     expectHTML: options.expectHTML,

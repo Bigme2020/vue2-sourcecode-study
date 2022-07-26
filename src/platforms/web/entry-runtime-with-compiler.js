@@ -19,15 +19,27 @@ const idToTemplate = cached(id => {
  * 运行时的 Vue.js 包就没有这部分的代码，通过
  */
 
-// 对 $mount 做备份
+// 运行时的 $mount 会比运行时+编译器的(完整版)更加早定义
+// 对运行时的 $mount 做备份
+/* 
+  那么为什么要做备份呢?
+    完整版本和只包含运行时版本之间的差异主要在于是否有模板编译阶段，只包含运行时版本没有模板编译阶段，初始化阶段完成后直接进入挂载阶段
+    而完整版本是初始化阶段完成后进入模板编译阶段，然后再进入挂载阶段。也就是说，这两个版本最终都会进入挂载阶段
+    所以在完整版本的$mount方法中将模板编译完成后需要回头去调只包含运行时版本的$mount方法以进入挂载阶段
+ */
 const mount = Vue.prototype.$mount
 // 覆写 $mount
+/**
+ * 1.根据传入的 el 参数获取 DOM
+ * 2.在用户没有手写 render 函数的情况下获取传入的模板 template
+ * 3.将获取到的 template 编译成 render 函数
+ */
 Vue.prototype.$mount = function (
   el?: string | Element,
   hydrating?: boolean
 ): Component {
   // 得到挂载点
-  el = el && query(el)
+  el = el && query(el) // 这里 el 可以是 string 参数也可以是节点元素
 
   // 挂载点不能是 <html> 或 <body> 元素
   /* istanbul ignore if */
@@ -45,17 +57,19 @@ Vue.prototype.$mount = function (
   //   render: () => {}
   // }
   /**
-   * 如果用户提供了 render 配置项，则直接跳过编译阶段，否则进入编译阶段
+   * 如果用户提供了 render 配置项，则直接跳过编译阶段直接挂载，否则进入编译阶段
    *  解析 template 和 el，并转换成 render 函数
    *  优先级：render > template > el
+   *  render (h) {
+        return h('div', this.hi)
+      }
    */
   if (!options.render) {
     let template = options.template
     if (template) {
-      if (typeof template === 'string') {
-        // 这里能说明这个东西是 id 选择器 比如 template: '#app'
-        if (template.charAt(0) === '#') {
-          // 返回这个元素的 innerHTML，将其作为 template 模板
+      if (typeof template === 'string') { // template 是字符串且以 # 开头
+        if (template.charAt(0) === '#') { // template: '#app'
+          // 返回这个 id 对应的元素的 innerHTML，将其作为 template 模板
           template = idToTemplate(template)
           /* istanbul ignore if */
           if (process.env.NODE_ENV !== 'production' && !template) {
@@ -65,7 +79,7 @@ Vue.prototype.$mount = function (
             )
           }
         }
-      } else if (template.nodeType) {
+      } else if (template.nodeType) { // template: document.querySelector('#app')
         // 如果 template 是一个正常的元素，也获取其 innerHTML 作为模板
         template = template.innerHTML
       } else {
@@ -74,8 +88,7 @@ Vue.prototype.$mount = function (
         }
         return this
       }
-    } else if (el) {
-      // 没有 template 走 el
+    } else if (el) { // 没有 template 走 el
       // 获取 el 选择器的 outerHTML 作为模板
       // 举例：下面这个就是 outerHTML
       // <div id='app'>innerHTML</div>
@@ -88,8 +101,9 @@ Vue.prototype.$mount = function (
         mark('compile')
       }
 
+      // 模板编译:(拿到模板 => 模板编译 => render函数) => 虚拟DOM:(VNode => patch => 视图)
       // 编译模板，得到 动态渲染函数 和 静态渲染函数
-      // createCompiler => createCompilerCreator => createCompileToFunctionFn => compileToFunctions
+      // createCompilerCreator(baseComplie) => createCompiler(baseOptions) -> complie(template, options) + createCompileToFunctionFn(compile) => compileToFunctions
       const { render, staticRenderFns } = compileToFunctions(template, {
         // 标记元素在 HTML 模板字符串中的开始和结束索引位置
         outputSourceRange: process.env.NODE_ENV !== 'production',

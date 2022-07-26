@@ -100,6 +100,9 @@ export function initMixin (Vue: Class<Component>) {
     // 如果存在 el 选项，会自动执行 $mount
     // 相反如果不存在 el，就会像项目中 main.js 中那样去手动 mount
     if (vm.$options.el) {
+      // $mount 每个平台都有不同的实现方法，比如在完整版的在 src/platforms/web/entry-runtime-with-compiler.js 而 运行时的在 src/platforms/web/runtime/index.js
+      // 运行+编译的完整版的 $mount 会先解析模板再进行挂载（运行时 $mount）
+      // beforeMount beforeUpdate mounted 就是在运行时的 $mount 中的 mountComponent 函数中
       vm.$mount(vm.$options.el)
     }
   }

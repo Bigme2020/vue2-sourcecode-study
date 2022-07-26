@@ -75,6 +75,7 @@ export function lifecycleMixin (Vue: Class<Component>) {
       // initial render
       // 进入 patch 阶段（patch、diff算法）
       // 首次渲染时第一个参数传的是真实节点
+      // __patch__ 是和运行时的 $mount 一块定义
       vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false /* removeOnly */)
     } else {
       // oldVnode 存在，表示后续更新
@@ -208,13 +209,14 @@ export function mountComponent (
     // 负责更新组件
     updateComponent = () => {
       // 执行 _update 进行更新阶段，首先执行 _render，将组件变成 VNode
-      vm._update(vm._render(), hydrating)
+      vm._update(vm._render(), hydrating) // 这个 _update 就在当前 lifecycleMixin 中定义的
     }
   }
 
   // we set this to vm._watcher inside the watcher's constructor
   // since the watcher's initial patch may call $forceUpdate (e.g. inside child
   // component's mounted hook), which relies on vm._watcher being already defined
+  // 这个就是实例化 render watcher 的地方
   new Watcher(vm, updateComponent, noop, {
     before () {
       if (vm._isMounted && !vm._isDestroyed) {
