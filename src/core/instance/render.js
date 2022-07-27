@@ -73,7 +73,10 @@ export function renderMixin (Vue: Class<Component>) {
     return nextTick(fn, this)
   }
 
-  // 执行组件的 render 函数,得到组件的 VNode
+  /**
+   * 执行组件实例的 $options.render 函数,得到组件的 VNode
+   * @returns Vnode
+   */
   Vue.prototype._render = function (): VNode {
     const vm: Component = this
     // 获取 render 函数

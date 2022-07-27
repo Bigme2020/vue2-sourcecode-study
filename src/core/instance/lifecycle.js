@@ -209,6 +209,7 @@ export function mountComponent (
     // 负责更新组件
     updateComponent = () => {
       // 执行 _update 进行更新阶段，首先执行 _render，将组件变成 VNode
+      // _render 在 src/core/instance/render.js 中
       vm._update(vm._render(), hydrating) // 这个 _update 就在当前 lifecycleMixin 中定义的
     }
   }

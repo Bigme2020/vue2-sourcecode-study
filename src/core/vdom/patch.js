@@ -128,6 +128,9 @@ export function createPatchFunction (backend) {
 
   let creatingElmInVPre = 0
 
+  /**
+   * 
+   */
   function createElm (
     vnode,
     insertedVnodeQueue,
@@ -161,6 +164,7 @@ export function createPatchFunction (backend) {
     const data = vnode.data
     const children = vnode.children
     const tag = vnode.tag
+    // 如果有 tag 那么该节点就是元素节点，创建一个元素节点，并递归的创建元素的子节点并插入到父节点中
     if (isDef(tag)) {
       if (process.env.NODE_ENV !== 'production') {
         if (data && data.pre) {
@@ -177,7 +181,7 @@ export function createPatchFunction (backend) {
         }
       }
 
-      // 创建 DOM 节点
+      // 创建元素节点
       vnode.elm = vnode.ns
         ? nodeOps.createElementNS(vnode.ns, tag)
         : nodeOps.createElement(tag, vnode)
@@ -447,29 +451,28 @@ export function createPatchFunction (backend) {
 
   /**
    * diff 过程:
-   *  diff 优化:做了四种假设，假设新老节点开头结尾有相同节点的情况，一旦命中假设，就避免了一次循环，以提高执行效率
-   *           1.新开始节点和老开始节点是同一节点,然后去做对比更新
-   *           2.新结束节点和老结束节点是同一节点
-   *           3.老开始节点和新结束节点是同一节点
-   *           4.新开始节点和老结束节点是同一节点
-   *           
-   *           如果不幸没有命中假设，则执行遍历，从老节点中找到新开始节点
-   *           找到相同节点，则执行 patchVnode，然后将老节点移动到正确的位置
-   *  如果老节点先于新节点遍历结束，则剩余的新节点执行新增节点操作
-   *  如果新节点先于老节点遍历结束，则剩余的老节点执行删除操作，移除这些老节点
+   *  diff 优化:做了四种假设，一旦命中假设，就直接做对比更新，避免了一次循环，以提高执行效率
+   *           1.vnode start 和 oldVnode start 是同一节点
+   *           2.vnode end 和 oldVnode end 是同一节点
+   *           3.vnode end 和 oldVnode start 是同一节点
+   *           4.vnode start 和 oldVnode end 是同一节点
+   *                  
+   *  如果不幸没有命中假设，则执行遍历,找到相同节点，则执行 patchVnode，然后将老节点移动到正确的位置
+   *  如果 oldVnode 先于 vnode 遍历结束，则剩余的 vnode 执行新增节点操作
+   *  如果 vnode 先于 oldVnode 遍历结束，则剩余的 oldVnode 执行删除操作
    */
   function updateChildren (parentElm, oldCh, newCh, insertedVnodeQueue, removeOnly) {
     // const oldCh = [n1, n2, n3, n4]
     // const ch = [n1, n2, n3, n4, n5]
     // 定义了四个索引,分别是新开始节点,新结束节点,老开始节点,老结束节点的索引
-    let oldStartIdx = 0
-    let newStartIdx = 0
-    let oldEndIdx = oldCh.length - 1
-    let oldStartVnode = oldCh[0]
-    let oldEndVnode = oldCh[oldEndIdx]
-    let newEndIdx = newCh.length - 1
-    let newStartVnode = newCh[0]
-    let newEndVnode = newCh[newEndIdx]
+    let oldStartIdx = 0 // oldVnode start index
+    let newStartIdx = 0 // vnode start index
+    let oldEndIdx = oldCh.length - 1 // oldVnode end index
+    let oldStartVnode = oldCh[0] // oldVnode[start]
+    let oldEndVnode = oldCh[oldEndIdx] // oldVnode[end]
+    let newEndIdx = newCh.length - 1 // vnode end index
+    let newStartVnode = newCh[0] // vnode[start]
+    let newEndVnode = newCh[newEndIdx] // vnode[end]
     let oldKeyToIdx, idxInOld, vnodeToMove, refElm
 
     // removeOnly is a special flag used only by <transition-group>
@@ -484,7 +487,7 @@ export function createPatchFunction (backend) {
     // 遍历新老两组节点,只要有一组遍历完(开始索引超过结束索引)则跳出循环
     // 若未命中假设,则挨个遍历
     // 一次调整结束后,更新这四个游标
-    while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+    while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) { // 定义 while 循环条件
       if (isUndef(oldStartVnode)) {
         // 如果当前索引节点不存在,则移动游标，与 534 行相对应
         oldStartVnode = oldCh[++oldStartIdx] // Vnode has been moved left
@@ -513,9 +516,10 @@ export function createPatchFunction (backend) {
         newStartVnode = newCh[++newStartIdx]
       } else {
         // 走到这里，则说明假设没有命中，没办法，遍历两个数组，找出相同节点
-        // 生成老节点的 map 对象,以节点的 key 为键,节点的下标为 value { key:idx } 
+        // 生成老节点的 map 对象,以节点的 key 属性为键,节点的下标为 value { key:idx } 
         if (isUndef(oldKeyToIdx)) oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx)
         // 如果新节点定义了 key 则直接从老节点 map 对象中找到 index
+        // 这里就可以看到 key 的作用了，定义了 key 就能直接进行复用，而没定义 key 就需要遍历去查找（效率低）
         idxInOld = isDef(newStartVnode.key)
           ? oldKeyToIdx[newStartVnode.key]
           // 如果新节点没有定义 key,只能走 findIdxInOld
@@ -528,10 +532,13 @@ export function createPatchFunction (backend) {
           // 存在，找到了相同节点
           vnodeToMove = oldCh[idxInOld]
           if (sameVnode(vnodeToMove, newStartVnode)) {
-            // 若同一个节点，则更新节点，并移动节点
+            // 若同一个节点，则更新节点
             patchVnode(vnodeToMove, newStartVnode, insertedVnodeQueue, newCh, newStartIdx)
             // 将老节点数组中这里这个节点置空
+            // 注意！这里置空的原因是：当前 idxInOld 可能不等于 oldEndIdx/oldStartIdx，所以这里就不能单纯的 oldEndIdx--/oldStartIdx++
+            // 等下次 oldEndIdx/oldStartIdx 到这个位置的时候直接按照一开始的逻辑跳过即可
             oldCh[idxInOld] = undefined
+            // 移动节点
             canMove && nodeOps.insertBefore(parentElm, vnodeToMove.elm, oldStartVnode.elm)
           } else {
             // same key but different element. treat as new element
@@ -591,7 +598,7 @@ export function createPatchFunction (backend) {
    *  如果老节点有孩子,新节点没孩子,则删除老节点的这些孩子
    *  更新文本节点
    */
-  function patchVnode (
+  function patchVnode ( // 这边先声明一个概念，<p>abcd123</p> 这种纯文字无任何变量的节点 叫 静态节点
     oldVnode,
     vnode,
     insertedVnodeQueue,
@@ -655,30 +662,35 @@ export function createPatchFunction (backend) {
     }
 
     if (isUndef(vnode.text)) {
-      // 若新节点不是文本节点
+      // 若 vnode 不是文本节点
       if (isDef(oldCh) && isDef(ch)) {
-        // 若新老节点都有孩子,并且孩子不相同
+        // 若 vnode oldVnode 都有孩子,并且孩子不相同
         // 则递归执行 diff 过程
         if (oldCh !== ch) updateChildren(elm, oldCh, ch, insertedVnodeQueue, removeOnly)
       } else if (isDef(ch)) {
-        // 老节点孩子不存在,新节点孩子存在
-        // 则创建这些新节点的孩子
+        // 若只有 vnode 孩子存在
+        // 则创建这些 vnode 的孩子
         if (process.env.NODE_ENV !== 'production') {
           checkDuplicateKeys(ch)
         }
+        /* 
+          判断 oldVnode 有无文本？
+          若有：清空 DOM 中的文本，再把 vnode 子节点添加到 DOM 中
+          若没有：直接把 vnode 子节点添加到 DOM 中
+         */
         if (isDef(oldVnode.text)) nodeOps.setTextContent(elm, '')
         // 原理就是 createElm 创建元素
         addVnodes(elm, null, ch, 0, ch.length - 1, insertedVnodeQueue)
       } else if (isDef(oldCh)) {
-        // 若老节点孩子存在,新节点孩子不存在
-        // 则移除这些老孩子节点
+        // 若只有 oldVnode 子节点存在
+        // 则移除这些 oldVnode 子节点
         removeVnodes(oldCh, 0, oldCh.length - 1)
       } else if (isDef(oldVnode.text)) {
-        // 若老节点是文本节点,则将文本内容置空
+        // vnode oldVnode 都没有子节点，且 oldVnode 有文本，那么把文本置空（因为这条线 vnode 不是文本节点）
         nodeOps.setTextContent(elm, '')
       }
     } else if (oldVnode.text !== vnode.text) {
-      // 若新老节点都是文本节点,且文本发生了改变
+      // 若 vnode oldVnode 都是文本节点,且文本发生了改变
       // 更新文本节点
       nodeOps.setTextContent(elm, vnode.text)
     }
@@ -828,7 +840,7 @@ export function createPatchFunction (backend) {
     const insertedVnodeQueue = []
 
     // 新节点存在，老节点不存在
-    // 首次渲染组件时会走这里
+    // 首次渲染组件时会走这里，这个时候 oldVnode 是 vm.$el
     if (isUndef(oldVnode)) {
       // empty mount (likely as component), create new root element
       isInitialPatch = true

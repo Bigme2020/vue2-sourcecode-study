@@ -31,7 +31,7 @@ extend(Vue.options.directives, platformDirectives)
 extend(Vue.options.components, platformComponents)
 
 // install platform patch function
-// __patch__ 就是在这被赋值的
+// __patch__ 就是在这被赋值的，这个 patch 是由工厂函数返回的，工厂函数在 src/core/vdom/patch.js 中
 Vue.prototype.__patch__ = inBrowser ? patch : noop
 
 // public mount method
