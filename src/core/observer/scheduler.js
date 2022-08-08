@@ -185,7 +185,7 @@ function callActivatedHooks(queue) {
  * 2.在一般简单场景比如有个 watch 监听，那么值被改变的话 queue 就会连续推入两个
  *   但推入第一个后，会执行到下面的 nextTick(flushSchedulerQueue)
  *   重点来了：这里的 nextTick(flushSchedulerQueue) 它并不会立即执行，因为它是异步微任务！
- *           只有在当前的同步代码都执行完后才会去执行 flushSchedulerQueue
+ *           只有在当前事件循环中的同步代码都执行完后才会去执行 flushSchedulerQueue
  *           当前的同步代码就是值被改变后触发了 dep.notify => 每个 watcher.update => 每个都 queueWatcher
  *           从第二个 queueWatcher 开始后就不会再走 nextTick(flushSchedulerQueue) 了，因为已经有了，不允许有第二个
  *           所以到最后执行到 flushSchedulerQueue 的时候，所有监听值变化的 watcher 都在 queue 中等待被 flushSchedulerQueue

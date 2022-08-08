@@ -66,6 +66,7 @@ export function eventsMixin (Vue: Class<Component>) {
       }
     } else {
       // 一个事件可以设置多个响应函数
+      // vm 实例上 _events 对象就是存放事件的位置
       (vm._events[event] || (vm._events[event] = [])).push(fn)
       // optimize hook:event cost by using a boolean flag marked at registration
       // instead of a hash lookup
